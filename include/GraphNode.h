@@ -16,8 +16,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef GRAPH_NODE_20090903_H_
-#define GRAPH_NODE_20090903_H_
+#ifndef GRAPH_NODE_H_20090903_
+#define GRAPH_NODE_H_20090903_
 
 #include <QGraphicsItem>
 #include <QPicture>
@@ -30,22 +30,29 @@ class QVariant;
 class GraphWidget;
 class GraphEdge;
 
-class GraphNode : public QGraphicsItem {
-	Q_DISABLE_COPY(GraphNode)
+constexpr int NodeZValue        = 1;
+constexpr int NodeWidth         = 100;
+constexpr int NodeHeight        = 50;
+constexpr int LabelFontSize     = 10;
+constexpr int BorderScaleFactor = 4;
 
+class GraphNode final : public QGraphicsItem {
 	friend class GraphWidget;
 	friend class GraphEdge;
+
 public:
 	GraphNode(GraphWidget *graph, const QString &text, const QColor &color = Qt::white);
-    ~GraphNode() override;
+	GraphNode(const GraphNode &) = delete;
+	GraphNode &operator=(const GraphNode &) = delete;
+	~GraphNode() override;
 
 public:
-    enum { Type = UserType + 2 };
+	enum { Type = UserType + 2 };
 
-    int type() const override{
-        // Enable the use of qgraphicsitem_cast with this item.
-        return Type;
-    }
+	int type() const override {
+		// Enable the use of qgraphicsitem_cast with this item.
+		return Type;
+	}
 
 public:
 	void setFont(const QFont &font);
@@ -66,11 +73,11 @@ private:
 	void drawLabel(const QString &text);
 
 protected:
-	QPicture          picture_;
-	QColor            color_;
-	GraphWidget *     graph_;
+	QPicture picture_;
+	QColor color_;
+	GraphWidget *graph_ = nullptr;
 	QSet<GraphEdge *> edges_;
-	Agnode_t         *node_;
+	Agnode_t *node_ = nullptr;
 };
 
 #endif

@@ -15,8 +15,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef FIELD_WIDGET_H_20170818
-#define FIELD_WIDGET_H_20170818
+#ifndef FIELD_WIDGET_H_20170818_
+#define FIELD_WIDGET_H_20170818_
 
 #include <QLabel>
 #include <QModelIndex>
@@ -32,16 +32,16 @@ class FieldWidget : public QLabel {
 	void init(int fieldWidth);
 
 protected:
-	QPersistentModelIndex index;
-	int                   fieldWidth_;
+	QPersistentModelIndex index_;
+	int fieldWidth_;
 
 	ODBRegView *regView() const;
 	RegisterGroup *group() const;
 
 public:
-	FieldWidget(int fieldWidth, const QModelIndex &index, QWidget *parent = nullptr);
-	FieldWidget(int fieldWidth, const QString &fixedText, QWidget *parent = nullptr);
-	FieldWidget(const QString &fixedText, QWidget *parent = nullptr);
+	FieldWidget(int fieldWidth, const QModelIndex &index_, QWidget *parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
+	FieldWidget(int fieldWidth, const QString &fixedText, QWidget *parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
+	explicit FieldWidget(const QString &fixedText, QWidget *parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
 
 public:
 	virtual QString text() const;

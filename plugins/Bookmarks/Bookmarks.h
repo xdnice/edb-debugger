@@ -16,15 +16,13 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef BOOKMARKS_20061122_H_
-#define BOOKMARKS_20061122_H_
+#ifndef BOOKMARKS_H_20061122_
+#define BOOKMARKS_H_20061122_
 
+#include "BookmarksModel.h"
 #include "IPlugin.h"
 #include "Types.h"
-#include "BookmarksModel.h"
 #include <QVariantList>
-
-class QSignalMapper;
 
 namespace BookmarksPlugin {
 
@@ -38,23 +36,22 @@ class Bookmarks : public QObject, public IPlugin {
 	Q_CLASSINFO("url", "http://www.codef00.com")
 
 public:
-	Bookmarks(QObject *parent = nullptr);
+	explicit Bookmarks(QObject *parent = nullptr);
 
 public:
 	QMenu *menu(QWidget *parent = nullptr) override;
-	QList<QAction *> cpu_context_menu() override;
+	QList<QAction *> cpuContextMenu() override;
 
 public:
-	QVariantMap save_state() const override;
-	void restore_state(const QVariantMap &) override;
-
-public Q_SLOTS:
-	void add_bookmark_menu();
+	QVariantMap saveState() const override;
+	void restoreState(const QVariantMap &) override;
 
 private:
-	QMenu *          menu_            = nullptr;
-	QSignalMapper *  signal_mapper_   = nullptr;
-	BookmarkWidget * bookmark_widget_ = nullptr;
+	void addBookmarkMenu();
+
+private:
+	QMenu *menu_                    = nullptr;
+	BookmarkWidget *bookmarkWidget_ = nullptr;
 };
 
 }

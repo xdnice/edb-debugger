@@ -4,7 +4,6 @@ include("GNUInstallDirs")
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTORCC ON)
 
 set(PluginName "BinaryInfo")
 
@@ -14,12 +13,16 @@ add_library(${PluginName} SHARED
 	BinaryInfo.cpp
 	BinaryInfo.h
 	demangle.h
+	DialogRegions.cpp
+	DialogRegions.h
+	DialogRegions.ui
+	DialogHeader.ui
 	DialogHeader.cpp
 	DialogHeader.h
-	DialogHeader.ui
 	ELF32.cpp
 	ELF64.cpp
 	ELFXX.cpp
+	ELFXX.h
 	OptionsPage.cpp
 	OptionsPage.h
 	OptionsPage.ui
@@ -31,11 +34,10 @@ add_library(${PluginName} SHARED
 
 target_link_libraries(${PluginName} Qt5::Widgets PE ELF edb)
 
-set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR})
 install (TARGETS ${PluginName} DESTINATION ${CMAKE_INSTALL_LIBDIR}/edb)
 
 set_property(TARGET ${PluginName} PROPERTY CXX_EXTENSIONS OFF)
 set_property(TARGET ${PluginName} PROPERTY CXX_STANDARD 14)
+set_property(TARGET ${PluginName} PROPERTY LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
+set_property(TARGET ${PluginName} PROPERTY RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 
-add_subdirectory(libELF)
-add_subdirectory(libPE)

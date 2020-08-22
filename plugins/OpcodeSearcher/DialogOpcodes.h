@@ -16,65 +16,35 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef DIALOGOPCODES_20061101_H_
-#define DIALOGOPCODES_20061101_H_
+#ifndef DIALOG_OPCODES_H_20061101_
+#define DIALOG_OPCODES_H_20061101_
 
-#include "Types.h"
-#include "Instruction.h"
-
+#include "ui_DialogOpcodes.h"
 #include <QDialog>
-#include <QList>
-#include <vector>
 
 class QSortFilterProxyModel;
-class QListWidgetItem;
 
 namespace OpcodeSearcherPlugin {
 
-namespace Ui { class DialogOpcodes; }
+class DialogResults;
 
 class DialogOpcodes : public QDialog {
 	Q_OBJECT
 
 public:
-    explicit DialogOpcodes(QWidget *parent = nullptr);
-    ~DialogOpcodes() override;
-
-public Q_SLOTS:
-	void on_btnFind_clicked();
-	void on_listWidget_itemDoubleClicked(QListWidgetItem *);
+	explicit DialogOpcodes(QWidget *parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
+	~DialogOpcodes() override = default;
 
 private:
-	using InstructionList = std::vector<edb::Instruction *>;
+	void doFind();
 
 private:
-	// we currently only support opcodes sequences up to 8 bytes big
-	union OpcodeData {
-		quint32 dword;
-		quint64 qword;
-		quint8  data[sizeof(quint64)];
-	};
-
-	void test_esp_add_0(const OpcodeData &data, edb::address_t start_address);
-	void test_esp_add_regx1(const OpcodeData &data, edb::address_t start_address);
-	void test_esp_add_regx2(const OpcodeData &data, edb::address_t start_address);
-	void test_esp_sub_regx1(const OpcodeData &data, edb::address_t start_address);
-	void do_find();
-	void add_result(const InstructionList &instructions, edb::address_t rva);
-	void run_tests(int classtype, const OpcodeData &opcode, edb::address_t address);
-
-	template <int REG>
-	void test_reg_to_ip(const OpcodeData &data, edb::address_t start_address);
-
-	template <int REG>
-	void test_deref_reg_to_ip(const OpcodeData &data, edb::address_t start_address);
+	void showEvent(QShowEvent *event) override;
 
 private:
-    void showEvent(QShowEvent *event) override;
-
-private:
-	Ui::DialogOpcodes *const ui;
-	QSortFilterProxyModel *  filter_model_;
+	Ui::DialogOpcodes ui;
+	QSortFilterProxyModel *filterModel_ = nullptr;
+	QPushButton *buttonFind_            = nullptr;
 };
 
 }

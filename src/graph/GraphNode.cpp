@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "Configuration.h"
 #include "GraphEdge.h"
 #include "GraphWidget.h"
+#include "GraphvizHelper.h"
 #include "SyntaxHighlighter.h"
 #include "edb.h"
 
@@ -33,29 +34,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace {
 
-constexpr int NodeZValue        = 1;
-constexpr int NodeWidth         = 100;
-constexpr int NodeHeight        = 50;
-constexpr int LabelFontSize     = 10;
-constexpr int BorderScaleFactor = 4;
-const QColor TextColor          = Qt::black;
-const QColor BorderColor        = Qt::blue;
-const QColor SelectColor        = Qt::lightGray;
-const QString NodeFont          = "Monospace";
-
-
-Agnode_t *_agnode(Agraph_t *g, QString name) {
-	return agnode(g, name.toLocal8Bit().data(),	true);
-}
-
-/// Directly use agsafeset which always works, contrarily to agset
-int _agset(void *object, QString attr, QString value) {
-	return agsafeset(
-		object,
-		attr.toLocal8Bit().data(),
-		value.toLocal8Bit().data(),
-		value.toLocal8Bit().data());
-}
+const QColor TextColor   = Qt::black;
+const QColor BorderColor = Qt::blue;
+const QColor SelectColor = Qt::lightGray;
+const QString NodeFont   = "Monospace";
 
 }
 
@@ -63,11 +45,12 @@ int _agset(void *object, QString attr, QString value) {
 // Name: GraphNode
 // Desc:
 //------------------------------------------------------------------------------
-GraphNode::GraphNode(GraphWidget *graph, const QString &text, const QColor &color) : color_(color), graph_(graph) {
+GraphNode::GraphNode(GraphWidget *graph, const QString &text, const QColor &color)
+	: color_(color), graph_(graph) {
 
-    setFlag(QGraphicsItem::ItemIsMovable, true);
-    setFlag(QGraphicsItem::ItemIsSelectable, true);
-    setFlag(QGraphicsItem::ItemSendsGeometryChanges, true);
+	setFlag(QGraphicsItem::ItemIsMovable, true);
+	setFlag(QGraphicsItem::ItemIsSelectable, true);
+	setFlag(QGraphicsItem::ItemSendsGeometryChanges, true);
 	setAcceptHoverEvents(true);
 	setCacheMode(QGraphicsItem::DeviceCoordinateCache);
 	setZValue(NodeZValue);
@@ -77,12 +60,11 @@ GraphNode::GraphNode(GraphWidget *graph, const QString &text, const QColor &colo
 	graph->scene()->addItem(this);
 
 	QString name = QString("Node%1").arg(reinterpret_cast<uintptr_t>(this));
-	node_ = _agnode(graph->graph_, name);
+	node_        = _agnode(graph->graph_, name);
 
 	_agset(node_, "fixedsize", "0");
-	_agset(node_, "width",  QString("%1").arg(boundingRect().width()  / 96.0));
+	_agset(node_, "width", QString("%1").arg(boundingRect().width() / 96.0));
 	_agset(node_, "height", QString("%1").arg(boundingRect().height() / 96.0));
-
 }
 
 //------------------------------------------------------------------------------
@@ -94,7 +76,7 @@ GraphNode::~GraphNode() {
 	// NOTE(eteran): we use Q_FOREACH because it operates on a *copy*
 	// of the list, which is important because deleting an
 	// edge removes it from the list
-	Q_FOREACH(GraphEdge *const edge, edges_) {
+	Q_FOREACH (GraphEdge *const edge, edges_) {
 		delete edge;
 	}
 }
@@ -105,7 +87,7 @@ GraphNode::~GraphNode() {
 //------------------------------------------------------------------------------
 QRectF GraphNode::boundingRect() const {
 	constexpr int weight = 2;
-	const int width = std::log2(weight) * BorderScaleFactor;
+	const int width      = std::log2(weight) * BorderScaleFactor;
 	return picture_.boundingRect().adjusted(-width, -width, +width, +width);
 }
 
@@ -115,8 +97,8 @@ QRectF GraphNode::boundingRect() const {
 //------------------------------------------------------------------------------
 void GraphNode::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {
 
-	Q_UNUSED(option);
-	Q_UNUSED(widget);
+	Q_UNUSED(option)
+	Q_UNUSED(widget)
 
 	painter->save();
 
@@ -130,7 +112,7 @@ void GraphNode::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
 	painter->setBrush(QBrush(color_));
 	painter->drawRect(picture_.boundingRect());
 
-	if(isSelected()) {
+	if (isSelected()) {
 		painter->setPen(QPen(Qt::DashLine));
 		painter->drawRect(boundingRect().adjusted(+4, +4, -4, -4));
 	}
@@ -138,8 +120,6 @@ void GraphNode::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
 	// draw contents
 	painter->restore();
 	picture_.play(painter);
-
-
 }
 
 //------------------------------------------------------------------------------
@@ -147,11 +127,11 @@ void GraphNode::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
 // Desc:
 //------------------------------------------------------------------------------
 QVariant GraphNode::itemChange(GraphicsItemChange change, const QVariant &value) {
-	if(!graph_->inLayout_) {
+	if (!graph_->inLayout_) {
 
-		switch(change) {
+		switch (change) {
 		case ItemPositionChange:
-			for(const auto edge : edges_) {
+			for (const auto edge : edges_) {
 				edge->updateLines();
 			}
 			break;
@@ -196,7 +176,7 @@ void GraphNode::drawLabel(const QString &text) {
 	QFont font(NodeFont);
 	font.setPixelSize(LabelFontSize);
 
-	if(!font.exactMatch()) {
+	if (!font.exactMatch()) {
 		QFontInfo fontinfo(font);
 		qWarning("replacing font '%s' by font '%s'", qPrintable(font.family()), qPrintable(fontinfo.family()));
 	}
@@ -208,12 +188,12 @@ void GraphNode::drawLabel(const QString &text) {
 	// just to calculate the proper bounding box
 	QRectF textBoundingRect = fm.boundingRect(QRectF(), Qt::AlignLeft | Qt::AlignTop, text);
 
-		// set some reasonable minimums
-	if(textBoundingRect.width() < NodeWidth) {
+	// set some reasonable minimums
+	if (textBoundingRect.width() < NodeWidth) {
 		textBoundingRect.setWidth(NodeWidth);
 	}
 
-	if(textBoundingRect.height() < NodeHeight) {
+	if (textBoundingRect.height() < NodeHeight) {
 		textBoundingRect.setHeight(NodeHeight);
 	}
 
@@ -222,7 +202,7 @@ void GraphNode::drawLabel(const QString &text) {
 	// set the bounding box and then really draw it
 	picture_.setBoundingRect(adjustedBoundingBox.toRect());
 
-	if(syntax_highlighting_enabled) {
+	if (syntax_highlighting_enabled) {
 
 		// create the text layout
 		QTextLayout textLayout(text, painter.font());
@@ -231,9 +211,9 @@ void GraphNode::drawLabel(const QString &text) {
 
 		textLayout.beginLayout();
 
-		int y = 0;
+		int y             = 0;
 		QStringList lines = text.split(QLatin1Char('\n'));
-		for(const QString &l : lines) {
+		for (const QString &l : lines) {
 			QTextLine line = textLayout.createLine();
 
 			if (!line.isValid()) {
@@ -243,8 +223,6 @@ void GraphNode::drawLabel(const QString &text) {
 			line.setNumColumns(l.length());
 			line.setPosition(QPoint(0, y));
 			y += fm.lineSpacing();
-
-
 		}
 
 		textLayout.endLayout();
@@ -262,7 +240,7 @@ void GraphNode::drawLabel(const QString &text) {
 // Desc:
 //------------------------------------------------------------------------------
 void GraphNode::hoverEnterEvent(QGraphicsSceneHoverEvent *e) {
-	Q_UNUSED(e);
+	Q_UNUSED(e)
 }
 
 //------------------------------------------------------------------------------
@@ -270,5 +248,5 @@ void GraphNode::hoverEnterEvent(QGraphicsSceneHoverEvent *e) {
 // Desc:
 //------------------------------------------------------------------------------
 void GraphNode::hoverLeaveEvent(QGraphicsSceneHoverEvent *e) {
-	Q_UNUSED(e);
+	Q_UNUSED(e)
 }

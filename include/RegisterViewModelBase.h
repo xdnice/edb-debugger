@@ -1,7 +1,9 @@
-#ifndef REGISTER_VIEW_MODEL_H_20151206
-#define REGISTER_VIEW_MODEL_H_20151206
+
+#ifndef REGISTER_VIEW_MODEL_BASE_H_20151206_
+#define REGISTER_VIEW_MODEL_BASE_H_20151206_
 
 #include "Register.h"
+#include "util/Integer.h"
 #include <QAbstractItemModel>
 #include <deque>
 #include <vector>
@@ -18,15 +20,7 @@ class Category;
 class SIMDCategory;
 class FPUCategory;
 
-// Sets register with name `name` to value `value`
-// Returns whether it succeeded
-// If succeeded, `resultingValue` is set to what the function got back after setting
-// `resultingValue` can differ from `value` if e.g. the kernel doesn't allow to flip some
-// bits of the register, like EFLAGS on x86.
-template <typename T>
-bool setDebuggeeRegister(const QString &name, const T &value, T &resultingValue);
-
-class Model : public QAbstractItemModel {
+class EDB_EXPORT Model : public QAbstractItemModel {
 	Q_OBJECT
 
 public:
@@ -37,24 +31,11 @@ public:
 		NUM_COLS
 	};
 
-	struct ElementSize {
-		enum T {
-			BYTE = 1,
-			WORD = 2,
-			DWORD = 4,
-			QWORD = 8
-		} value;
-
-		ElementSize() = default;
-		ElementSize(T v) : value(v) {
-		}
-
-		explicit ElementSize(int v) : value(static_cast<T>(v)) {
-		}
-
-		operator T() const {
-			return value;
-		}
+	enum class ElementSize {
+		BYTE  = 1,
+		WORD  = 2,
+		DWORD = 4,
+		QWORD = 8,
 	};
 
 	enum SizesOrder {
@@ -157,14 +138,14 @@ public:
 	QModelIndex activeIndex() const;
 
 public:
-	virtual void setChosenSIMDSize(const QModelIndex &index, ElementSize newSize);
-	virtual void setChosenSIMDFormat(const QModelIndex &index, NumberDisplayMode newFormat);
-	virtual void setChosenFPUFormat(const QModelIndex &index, NumberDisplayMode newFormat);
+	void setChosenSIMDSize(const QModelIndex &index, ElementSize newSize);
+	void setChosenSIMDFormat(const QModelIndex &index, NumberDisplayMode newFormat);
+	void setChosenFPUFormat(const QModelIndex &index, NumberDisplayMode newFormat);
 
 	// Should be called after updating all the data
-	virtual void dataUpdateFinished();
+	void dataUpdateFinished();
 	// should be called when the debugger is about to resume, to save current register values to previous
-	virtual void saveValues();
+	void saveValues();
 
 protected:
 	// All categories are there to stay after they've been inserted
@@ -179,12 +160,17 @@ protected:
 
 private:
 	std::unique_ptr<CategoriesHolder> rootItem;
-	QPersistentModelIndex             activeIndex_;
+	QPersistentModelIndex activeIndex_;
 
 Q_SIGNALS:
 	void SIMDDisplayFormatChanged();
 	void FPUDisplayFormatChanged();
 };
+
+inline std::ostream &operator<<(std::ostream &os, Model::ElementSize size) {
+	os << static_cast<std::underlying_type<Model::ElementSize>::type>(size);
+	return os;
+}
 
 class RegisterViewItem {
 protected:
@@ -193,7 +179,8 @@ protected:
 	QString name_;
 
 public:
-	RegisterViewItem(const QString &name) : name_(name) {
+	RegisterViewItem(const QString &name)
+		: name_(name) {
 	}
 
 	virtual ~RegisterViewItem() = default;
@@ -240,7 +227,8 @@ public:
 
 class AbstractRegisterItem : public RegisterViewItem {
 protected:
-	AbstractRegisterItem(const QString &name) : RegisterViewItem(name) {
+	AbstractRegisterItem(const QString &name)
+		: RegisterViewItem(name) {
 	}
 
 public:
@@ -259,11 +247,11 @@ public:
 template <class StoredType>
 class RegisterItem : public AbstractRegisterItem {
 protected:
-	QString    comment_;
+	QString comment_;
 	StoredType value_;
 	StoredType prevValue_;
-	bool       valueKnown_     = false;
-	bool       prevValueKnown_ = false;
+	bool valueKnown_     = false;
+	bool prevValueKnown_ = false;
 
 protected:
 	virtual QString valueString() const;
@@ -286,7 +274,8 @@ public:
 template <class StoredType>
 class SimpleRegister : public RegisterItem<StoredType> {
 public:
-	SimpleRegister(const QString &name) : RegisterItem<StoredType>(name) {
+	SimpleRegister(const QString &name)
+		: RegisterItem<StoredType>(name) {
 	}
 
 public:
@@ -294,21 +283,21 @@ public:
 	int valueMaxLength() const override;
 };
 
-struct BitFieldDescription {
-	QString              name;
-	unsigned             offset;
-	unsigned             length;
+struct BitFieldDescriptionEx {
+	QString name;
+	unsigned offset;
+	unsigned length;
 	std::vector<QString> explanations;
 
 	// Prevent compiler warnings about missing initializer: make default argument explicitly default
-	BitFieldDescription(QString name, unsigned offset, unsigned length, std::vector<QString> explanations = std::vector<QString>()) :
-	    name(name), offset(offset), length(length), explanations(explanations) {
+	BitFieldDescriptionEx(QString name, unsigned offset, unsigned length, std::vector<QString> explanations = std::vector<QString>())
+		: name(name), offset(offset), length(length), explanations(explanations) {
 	}
 };
 
 class BitFieldProperties {
 public:
-	virtual ~BitFieldProperties() = default;
+	virtual ~BitFieldProperties()   = default;
 	virtual unsigned offset() const = 0;
 	virtual unsigned length() const = 0;
 };
@@ -317,10 +306,10 @@ template <class UnderlyingType>
 class FlagsRegister;
 
 template <class UnderlyingType>
-class BitFieldItem : public RegisterViewItem, public BitFieldProperties {
+class BitFieldItem final : public RegisterViewItem, public BitFieldProperties {
 protected:
-	unsigned             offset_;
-	unsigned             length_;
+	unsigned offset_;
+	unsigned length_;
 	std::vector<QString> explanations;
 
 protected:
@@ -331,7 +320,7 @@ protected:
 	UnderlyingType prevValue() const;
 
 public:
-	BitFieldItem(const BitFieldDescription &descr);
+	BitFieldItem(const BitFieldDescriptionEx &descr);
 
 public:
 	QVariant data(int column) const override;
@@ -344,19 +333,16 @@ public:
 };
 
 template <class StoredType>
-class FlagsRegister : public SimpleRegister<StoredType> {
+class FlagsRegister final : public SimpleRegister<StoredType> {
 	template <class UnderlyingType>
 	friend class BitFieldItem;
 
 public:
-	FlagsRegister(const QString &name, const std::vector<BitFieldDescription> &bitFields);
+	FlagsRegister(const QString &name, const std::vector<BitFieldDescriptionEx> &bitFields);
 
 public:
 	RegisterViewItem *child(int) override;
 	int childCount() const override;
-
-private:
-	void addField(std::unique_ptr<BitFieldItem<StoredType>> item);
 
 protected:
 	std::vector<BitFieldItem<StoredType>> fields;
@@ -366,7 +352,7 @@ template <class StoredType>
 class SIMDRegister;
 
 template <class StoredType, class SizingType>
-class SIMDFormatItem : public RegisterViewItem {
+class SIMDFormatItem final : public RegisterViewItem {
 public:
 	SIMDFormatItem(NumberDisplayMode format);
 
@@ -390,7 +376,7 @@ private:
 class SIMDElement {}; // generic non-templated class to dynamic_cast to
 
 template <class StoredType, class SizingType>
-class SIMDSizedElement : public RegisterViewItem, public SIMDElement {
+class SIMDSizedElement final : public RegisterViewItem, public SIMDElement {
 	friend class SIMDFormatItem<StoredType, SizingType>;
 
 public:
@@ -414,7 +400,8 @@ private:
 	std::vector<SIMDFormatItem<StoredType, SizingType>> formats;
 };
 
-template <class StoredType> class SIMDSizedElementsContainer : public RegisterViewItem {
+template <class StoredType>
+class SIMDSizedElementsContainer final : public RegisterViewItem {
 	template <class SizeType, class... Args>
 	void addElement(Args &&... args);
 
@@ -422,18 +409,19 @@ protected:
 	std::vector<std::unique_ptr<RegisterViewItem>> elements;
 
 public:
-	SIMDSizedElementsContainer(const QString &name, std::size_t size,
-	                           const std::vector<NumberDisplayMode> &validFormats);
-	SIMDSizedElementsContainer(SIMDSizedElementsContainer &&other);
+	SIMDSizedElementsContainer(const QString &name, std::size_t size, const std::vector<NumberDisplayMode> &validFormats);
+	SIMDSizedElementsContainer(SIMDSizedElementsContainer &&other) noexcept;
 	RegisterViewItem *child(int row) override;
-	int               childCount() const override;
-	QVariant          data(int column) const override;
-	QByteArray        rawValue() const override;
-	bool              changed() const override;
+	int childCount() const override;
+	QVariant data(int column) const override;
+	QByteArray rawValue() const override;
+	bool changed() const override;
 };
 
-template <class StoredType> class SIMDRegister : public SimpleRegister<StoredType> {
-	template <class U, class V> friend class SIMDSizedElement;
+template <class StoredType>
+class SIMDRegister final : public SimpleRegister<StoredType> {
+	template <class U, class V>
+	friend class SIMDSizedElement;
 
 protected:
 	std::deque<SIMDSizedElementsContainer<StoredType>> sizedElementContainers;
@@ -442,16 +430,17 @@ protected:
 
 public:
 	SIMDRegister(const QString &name, const std::vector<NumberDisplayMode> &validFormats);
-	int               childCount() const override;
+	int childCount() const override;
 	RegisterViewItem *child(int) override;
-	QVariant          data(int column) const override;
+	QVariant data(int column) const override;
 };
 
 class GenericFPURegister {}; // generic non-templated class to dynamic_cast to
 
 template <class FloatType>
-class FPURegister : public SimpleRegister<FloatType>, public GenericFPURegister {
-	template <class U, class V> friend class SIMDFormatItem;
+class FPURegister final : public SimpleRegister<FloatType>, public GenericFPURegister {
+	template <class U, class V>
+	friend class SIMDFormatItem;
 
 public:
 	FPURegister(const QString &name);
@@ -477,7 +466,7 @@ protected:
 class Category : public RegisterViewItem {
 public:
 	Category(const QString &name, int row);
-	Category(Category &&other);
+	Category(Category &&other) noexcept;
 
 public:
 	AbstractRegisterItem *getRegister(std::size_t i) const;
@@ -493,10 +482,10 @@ public:
 
 private:
 	std::vector<std::unique_ptr<AbstractRegisterItem>> registers;
-	bool                                               visible_ = true;
+	bool visible_ = true;
 };
 
-class SIMDCategory : public Category {
+class SIMDCategory final : public Category {
 public:
 	SIMDCategory(const QString &name, int row, const std::vector<NumberDisplayMode> &validFormats);
 	~SIMDCategory();
@@ -511,14 +500,14 @@ public:
 	const std::vector<NumberDisplayMode> &validFormats() const;
 
 private:
-	bool                                 sizeChanged_   = false;
-	bool                                 formatChanged_ = false;
-	Model::ElementSize                   chosenSize_;
-	NumberDisplayMode                    chosenFormat_;
+	bool sizeChanged_   = false;
+	bool formatChanged_ = false;
+	Model::ElementSize chosenSize_;
+	NumberDisplayMode chosenFormat_;
 	std::vector<NumberDisplayMode> const validFormats_;
 };
 
-class FPUCategory : public Category {
+class FPUCategory final : public Category {
 public:
 	FPUCategory(const QString &name, int row);
 	~FPUCategory();
@@ -528,11 +517,11 @@ public:
 	void setChosenFormat(NumberDisplayMode newFormat);
 
 private:
-	bool              formatChanged_ = false;
+	bool formatChanged_ = false;
 	NumberDisplayMode chosenFormat_;
 };
 
-class CategoriesHolder : public RegisterViewItem {
+class CategoriesHolder final : public RegisterViewItem {
 	friend class Model;
 
 public:
@@ -542,7 +531,7 @@ public:
 	template <typename CategoryType = Category>
 	CategoryType *insert(const QString &name);
 
-	SIMDCategory *insertSIMD(const QString &name, const std::vector<NumberDisplayMode> &validFormats);
+	SIMDCategory *insertSimd(const QString &name, const std::vector<NumberDisplayMode> &validFormats);
 	int childCount() const override;
 	RegisterViewItem *child(int row) override;
 	QVariant data(int column) const override;

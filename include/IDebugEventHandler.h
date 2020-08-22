@@ -16,8 +16,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef IDEBUG_EVENT_HANDLER_20061101_H_
-#define IDEBUG_EVENT_HANDLER_20061101_H_
+#ifndef IDEBUG_EVENT_HANDLER_H_20061101_
+#define IDEBUG_EVENT_HANDLER_H_20061101_
 
 #include "Types.h"
 #include <memory>
@@ -29,7 +29,7 @@ public:
 	virtual ~IDebugEventHandler() = default;
 
 public:
-	virtual edb::EVENT_STATUS handle_event(const std::shared_ptr<IDebugEvent> &event) = 0;
+	virtual edb::EventStatus handleEvent(const std::shared_ptr<IDebugEvent> &event) = 0;
 };
 
 #endif

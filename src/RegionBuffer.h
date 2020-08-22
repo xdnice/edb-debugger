@@ -16,8 +16,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef REGION_BUFFER_20101111_H_
-#define REGION_BUFFER_20101111_H_
+#ifndef REGION_BUFFER_H_20101111_
+#define REGION_BUFFER_H_20101111_
 
 #include "IRegion.h"
 
@@ -27,24 +27,23 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 class IRegion;
 
-class RegionBuffer : public QIODevice {
+class RegionBuffer final : public QIODevice {
 	Q_OBJECT
 public:
-    explicit RegionBuffer(const std::shared_ptr<IRegion> &region);
+	explicit RegionBuffer(const std::shared_ptr<IRegion> &region);
 	RegionBuffer(const std::shared_ptr<IRegion> &region, QObject *parent);
 
 public:
-	void set_region(const std::shared_ptr<IRegion> &region);
+	void setRegion(const std::shared_ptr<IRegion> &region);
 
 public:
-    qint64 readData(char * data, qint64 maxSize) override;
-    qint64 writeData(const char*, qint64) override;
-	qint64 size() const override       { return region_ ? region_->size() : 0; }
-    bool isSequential() const override { return false; }
+	qint64 readData(char *data, qint64 maxSize) override;
+	qint64 writeData(const char *, qint64) override;
+	qint64 size() const override { return region_ ? region_->size() : 0; }
+	bool isSequential() const override { return false; }
 
 private:
 	std::shared_ptr<IRegion> region_;
 };
 
 #endif
-

@@ -2,13 +2,13 @@
 <ui version="4.0">
  <author>Evan Teran</author>
  <class>BinarySearcherPlugin::DialogBinaryString</class>
- <widget class="QDialog" name="DialogBinaryString">
+ <widget class="QDialog" name="BinarySearcherPlugin::DialogBinaryString">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>483</width>
-    <height>376</height>
+    <width>480</width>
+    <height>185</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -25,26 +25,14 @@
      </property>
     </widget>
    </item>
-   <item row="1" column="0" colspan="2">
-    <widget class="QListWidget" name="listWidget">
-     <property name="font">
-      <font>
-       <family>Monospace</family>
-      </font>
-     </property>
-     <property name="alternatingRowColors">
-      <bool>true</bool>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="0" colspan="2">
+   <item row="1" column="0">
     <widget class="QCheckBox" name="chkSkipNoAccess">
      <property name="text">
       <string>Skip Regions With No Access Rights</string>
      </property>
     </widget>
    </item>
-   <item row="3" column="0" colspan="2">
+   <item row="2" column="0">
     <widget class="QCheckBox" name="chkCaseSensitive">
      <property name="enabled">
       <bool>false</bool>
@@ -57,14 +45,14 @@
      </property>
     </widget>
    </item>
-   <item row="4" column="0">
+   <item row="3" column="0">
     <widget class="QCheckBox" name="chkAlignment">
      <property name="text">
       <string>Show Results With This Address Alignment</string>
      </property>
     </widget>
    </item>
-   <item row="4" column="1">
+   <item row="3" column="1">
     <widget class="QComboBox" name="cmbAlignment">
      <property name="currentIndex">
       <number>1</number>
@@ -86,60 +74,14 @@
      </item>
     </widget>
    </item>
-   <item row="5" column="0" colspan="2">
-    <layout class="QHBoxLayout">
-     <item>
-      <widget class="QPushButton" name="btnClose">
-       <property name="text">
-        <string>&amp;Close</string>
-       </property>
-       <property name="icon">
-        <iconset theme="dialog-close"/>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="btnHelp">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="text">
-        <string>&amp;Help</string>
-       </property>
-       <property name="icon">
-        <iconset theme="help-browser"/>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <spacer>
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>99</width>
-         <height>31</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item>
-      <widget class="QPushButton" name="btnFind">
-       <property name="text">
-        <string>&amp;Find</string>
-       </property>
-       <property name="icon">
-        <iconset theme="edit-find"/>
-       </property>
-       <property name="default">
-        <bool>true</bool>
-       </property>
-      </widget>
-     </item>
-    </layout>
+   <item row="4" column="0" colspan="2">
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Close</set>
+     </property>
+    </widget>
    </item>
-   <item row="6" column="0" colspan="2">
+   <item row="5" column="0" colspan="2">
     <widget class="QProgressBar" name="progressBar"/>
    </item>
   </layout>
@@ -153,30 +95,42 @@
   </customwidget>
  </customwidgets>
  <tabstops>
-  <tabstop>listWidget</tabstop>
   <tabstop>chkSkipNoAccess</tabstop>
   <tabstop>chkCaseSensitive</tabstop>
   <tabstop>chkAlignment</tabstop>
   <tabstop>cmbAlignment</tabstop>
-  <tabstop>btnClose</tabstop>
-  <tabstop>btnHelp</tabstop>
-  <tabstop>btnFind</tabstop>
  </tabstops>
  <resources/>
  <connections>
   <connection>
-   <sender>btnClose</sender>
-   <signal>clicked()</signal>
-   <receiver>DialogBinaryString</receiver>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>BinarySearcherPlugin::DialogBinaryString</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>417</x>
+     <y>130</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>458</x>
+     <y>153</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>BinarySearcherPlugin::DialogBinaryString</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>70</x>
-     <y>339</y>
+     <x>443</x>
+     <y>126</y>
     </hint>
     <hint type="destinationlabel">
-     <x>179</x>
-     <y>282</y>
+     <x>329</x>
+     <y>150</y>
     </hint>
    </hints>
   </connection>

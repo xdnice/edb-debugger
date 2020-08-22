@@ -16,21 +16,17 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef REGISTER_20100329_H_
-#define REGISTER_20100329_H_
+#ifndef REGISTER_H_20100329_
+#define REGISTER_H_20100329_
 
 #include "API.h"
 #include "Types.h"
 #include "Util.h"
 #include <QCoreApplication>
 #include <QString>
+#include <cassert>
 #include <cstring>
 #include <type_traits>
-
-class Register;
-
-template <std::size_t bitSize = 0, typename ValueType, typename Type>
-Register make_Register(const QString &name, ValueType value, Type type);
 
 class EDB_EXPORT Register {
 	Q_DECLARE_TR_FUNCTIONS(Register)
@@ -44,7 +40,7 @@ public:
 		TYPE_SEG     = 0x0004,
 		TYPE_COND    = 0x0008,
 		TYPE_FPU     = 0x0010,
-		TYPE_SIMD    = 0x0020
+		TYPE_SIMD    = 0x0020,
 	};
 
 	// Expand when AVX-512 instructions and state are supported
@@ -52,7 +48,7 @@ public:
 
 public:
 	Register();
-	Register(const Register &other)          = default;
+	Register(const Register &other) = default;
 	Register &operator=(const Register &rhs) = default;
 
 public:
@@ -63,65 +59,61 @@ public:
 	bool valid() const { return type_ != TYPE_INVALID; }
 	explicit operator bool() const { return valid(); }
 
-	Type type() const           { return type_; }
-	QString name() const        { return name_; }
+	Type type() const { return type_; }
+	QString name() const { return name_; }
 	std::size_t bitSize() const { return bitSize_; }
-	const char* rawData() const { return reinterpret_cast<const char*>(&value_); }
+	const char *rawData() const { return reinterpret_cast<const char *>(&value_); }
 
 	template <class T>
-	T value() const             { return T(value_); }
+	T value() const { return T(value_); }
 
 	// Return the value, zero-extended to address_t to be usable in address calculations
-	edb::address_t valueAsAddress() const {
-		// This function only makes sense for GPRs
-		assert(bitSize_ <= 8 * sizeof(edb::address_t));
-		edb::address_t result(0LL);
-		std::memcpy(&result, &value_, bitSize_ / 8);
-		return result;
-	}
+	edb::address_t valueAsAddress() const;
 
 	uint64_t valueAsInteger() const {
 		return valueAsAddress().toUint();
 	}
 
 	int64_t valueAsSignedInteger() const {
-		auto result = valueAsInteger();
+		uint64_t result = valueAsInteger();
 		// If MSB is set, sign extend the result
-		if(result & (1ll << (bitSize_ - 1))) {
+		if (result & (1ll << (bitSize_ - 1))) {
 			result = -1ll;
 			std::memcpy(&result, &value_, bitSize_ / 8);
 		}
 		return result;
 	}
 
-	void setScalarValue(std::uint64_t newValue) {
-		std::memcpy(&value_, &newValue, bitSize_ / 8);
-	}
+	void setScalarValue(std::uint64_t newValue);
 
-	template<typename T>
+	template <typename T>
 	void setValueFrom(const T &source) {
 		assert(bitSize_ <= 8 * sizeof(source));
-		std::memcpy(&value_, &source, bitSize_ / 8);
+
+		// NOTE(eteran): used to avoid warnings from GCC >= 8.2
+		auto from = reinterpret_cast<const char *>(&source);
+		auto to   = reinterpret_cast<char *>(&value_);
+
+		std::memcpy(to, from, bitSize_ / 8);
 	}
 
 	QString toHexString() const;
 
 private:
-	QString     name_;
-	StoredType  value_;
-	Type        type_;
-	std::size_t bitSize_;
+	QString name_        = tr("<unknown>");
+	StoredType value_    = {};
+	Type type_           = TYPE_INVALID;
+	std::size_t bitSize_ = 0;
 
-	template<std::size_t bitSize, typename ValueType, typename Type>
-	friend Register make_Register(const QString &name, ValueType value, Type type);
+	template <std::size_t bitSize, typename T>
+	friend Register make_Register(const QString &name, T value, Register::Type type);
 };
 
-template<std::size_t bitSize_, typename ValueType, typename Type>
-Register make_Register(const QString &name, ValueType value, Type type)
-{
-	static_assert(std::is_same<Type,Register::Type>::value,"type must be Register::Type");
-	constexpr std::size_t bitSize = (bitSize_ ? bitSize_ : BIT_LENGTH(value));
-	static_assert(bitSize_ % 8 == 0,"Strange bit size");
+template <std::size_t BitSize, typename T>
+Register make_Register(const QString &name, T value, Register::Type type) {
+
+	constexpr std::size_t bitSize = (BitSize ? BitSize : 8 * sizeof(T));
+	static_assert(BitSize % 8 == 0, "Strange bit size");
 
 	Register reg;
 	reg.name_    = name;
@@ -129,11 +121,21 @@ Register make_Register(const QString &name, ValueType value, Type type)
 	reg.bitSize_ = bitSize;
 
 	constexpr std::size_t size = bitSize / 8;
-	static_assert(size <= sizeof(ValueType), "ValueType appears smaller than size specified");
-	util::markMemory(&reg.value_, sizeof(reg.value_));
-	std::memcpy(&reg.value_,&value,size);
+	static_assert(size <= sizeof(T), "ValueType appears smaller than size specified");
+	util::mark_memory(&reg.value_, sizeof(reg.value_));
+
+	// NOTE(eteran): used to avoid warnings from GCC >= 8.2
+	auto from = reinterpret_cast<const char *>(&value);
+	auto to   = reinterpret_cast<char *>(&reg.value_);
+
+	std::memcpy(to, from, size);
 
 	return reg;
+}
+
+template <typename T>
+Register make_Register(const QString &name, T value, Register::Type type) {
+	return make_Register<0>(name, value, type);
 }
 
 #endif

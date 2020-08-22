@@ -16,13 +16,15 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef BINARYSTRING_20060821_H_
-#define BINARYSTRING_20060821_H_
+#ifndef BINARY_STRING_H_20060821_
+#define BINARY_STRING_H_20060821_
 
 #include "API.h"
 #include <QWidget>
 
-namespace Ui { class BinaryStringWidget; }
+namespace Ui {
+class BinaryStringWidget;
+}
 
 class QString;
 class QByteArray;
@@ -30,9 +32,15 @@ class QByteArray;
 class EDB_EXPORT BinaryString : public QWidget {
 	Q_OBJECT
 
+private:
+	enum class Mode {
+		LengthLimited, // obeys setMaxLength()
+		MemoryEditing  // obeys user's choice in keepSize checkbox
+	};
+
 public:
-    BinaryString(QWidget *parent = nullptr);
-    ~BinaryString() override;
+	BinaryString(QWidget *parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
+	~BinaryString() override;
 
 private Q_SLOTS:
 	void on_txtAscii_textEdited(const QString &text);
@@ -50,17 +58,10 @@ public:
 private:
 	void setEntriesMaxLength(int n);
 
-	Ui::BinaryStringWidget *const ui;
-
-	enum class Mode {
-		LengthLimited, // obeys setMaxLength()
-		MemoryEditing  // obeys user's choice in keepSize checkbox
-	};
-
-	Mode mode_               = Mode::MemoryEditing;
-	int requestedMaxLength_  = 0;
-	int valueOriginalLength_ = 0;
+	::Ui::BinaryStringWidget *ui = nullptr;
+	Mode mode_                   = Mode::MemoryEditing;
+	int requestedMaxLength_      = 0;
+	int valueOriginalLength_     = 0;
 };
 
 #endif
-

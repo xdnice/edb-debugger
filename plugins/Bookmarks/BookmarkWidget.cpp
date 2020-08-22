@@ -17,49 +17,45 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "BookmarkWidget.h"
-#include "edb.h"
-#include "Expression.h"
 #include "BookmarksModel.h"
+#include "Expression.h"
+#include "edb.h"
 #include <QInputDialog>
 #include <QMenu>
 #include <QMessageBox>
 #include <QTableWidgetItem>
 
-#include "ui_Bookmarks.h"
-
 namespace BookmarksPlugin {
 
-//------------------------------------------------------------------------------
-// Name: BookmarkWidget
-// Desc:
-//------------------------------------------------------------------------------
-BookmarkWidget::BookmarkWidget(QWidget *parent, Qt::WindowFlags f) : QWidget(parent, f), ui(new Ui::Bookmarks) {
-	ui->setupUi(this);
+/**
+ * @brief BookmarkWidget::BookmarkWidget
+ * @param parent
+ * @param f
+ */
+BookmarkWidget::BookmarkWidget(QWidget *parent, Qt::WindowFlags f)
+	: QWidget(parent, f) {
+
+	ui.setupUi(this);
 
 	model_ = new BookmarksModel(this);
-	ui->tableView->setModel(model_);
+	ui.tableView->setModel(model_);
 
 	connect(edb::v1::debugger_ui, SIGNAL(detachEvent()), model_, SLOT(clearBookmarks()));
+	connect(ui.buttonAdd, &QPushButton::clicked, this, &BookmarkWidget::buttonAddClicked);
+	connect(ui.buttonDel, &QPushButton::clicked, this, &BookmarkWidget::buttonDelClicked);
+	connect(ui.buttonClear, &QPushButton::clicked, this, &BookmarkWidget::buttonClearClicked);
 }
 
-//------------------------------------------------------------------------------
-// Name: ~BookmarkWidget
-// Desc:
-//------------------------------------------------------------------------------
-BookmarkWidget::~BookmarkWidget() {
-	delete ui;
-}
-
-//------------------------------------------------------------------------------
-// Name: on_tableView_doubleClicked
-// Desc:
-//------------------------------------------------------------------------------
+/**
+ * @brief BookmarkWidget::on_tableView_doubleClicked
+ * @param index
+ */
 void BookmarkWidget::on_tableView_doubleClicked(const QModelIndex &index) {
 
-	if(auto item = static_cast<BookmarksModel::Bookmark *>(index.internalPointer())) {
-		switch(index.column()) {
+	if (auto item = static_cast<BookmarksModel::Bookmark *>(index.internalPointer())) {
+		switch (index.column()) {
 		case 0: //address
-			switch(item->type) {
+			switch (item->type) {
 			case BookmarksModel::Bookmark::Code:
 				edb::v1::jump_to_address(item->address);
 				break;
@@ -72,99 +68,97 @@ void BookmarkWidget::on_tableView_doubleClicked(const QModelIndex &index) {
 			}
 			break;
 		case 1: // type
-			{
-				QString old_type = BookmarksModel::BookmarkTypeToString(item->type);
-				QStringList items;
-				items << tr("Code") << tr("Data") << tr("Stack");
+		{
+			QString old_type = BookmarksModel::bookmarkTypeToString(item->type);
+			QStringList items;
+			items << tr("Code") << tr("Data") << tr("Stack");
 
-				bool ok;
-				const QString new_type = QInputDialog::getItem(ui->tableView, tr("Comment"), tr("Set Type:"), items, items.indexOf(old_type), false, &ok);
-				if(ok) {
-					model_->setType(index, new_type);
-				}
+			bool ok;
+			const QString new_type = QInputDialog::getItem(ui.tableView, tr("Comment"), tr("Set Type:"), items, items.indexOf(old_type), false, &ok);
+			if (ok) {
+				model_->setType(index, new_type);
 			}
-			break;
+		} break;
 		case 2: //comment
-			{
-				QString old_comment = item->comment;
-				bool ok;
-				const QString new_comment = QInputDialog::getText(ui->tableView, tr("Comment"), tr("Set Comment:"), QLineEdit::Normal, old_comment, &ok);
-				if(ok) {
-					model_->setComment(index, new_comment);
-				}
+		{
+			QString old_comment = item->comment;
+			bool ok;
+			const QString new_comment = QInputDialog::getText(ui.tableView, tr("Comment"), tr("Set Comment:"), QLineEdit::Normal, old_comment, &ok);
+			if (ok) {
+				model_->setComment(index, new_comment);
 			}
-			break;
+		} break;
 		}
 	}
 }
 
-//------------------------------------------------------------------------------
-// Name: on_btnAdd_clicked
-// Desc:
-//------------------------------------------------------------------------------
-void BookmarkWidget::on_btnAdd_clicked() {
+/**
+ * @brief BookmarkWidget::buttonAddClicked
+ */
+void BookmarkWidget::buttonAddClicked() {
 
-	edb::address_t address;
-	if(edb::v1::get_expression_from_user(tr("Bookmark Address"), tr("Address:"), &address)) {
-		add_address(address);
+	if (boost::optional<edb::address_t> address = edb::v2::get_expression_from_user(tr("Bookmark Address"), tr("Address:"))) {
+		addAddress(*address);
 	}
 }
 
-//------------------------------------------------------------------------------
-// Name: on_btnDel_clicked
-// Desc:
-//------------------------------------------------------------------------------
-void BookmarkWidget::on_btnDel_clicked() {
+/**
+ * @brief BookmarkWidget::buttonDelClicked
+ */
+void BookmarkWidget::buttonDelClicked() {
 
-	const QItemSelectionModel *const selModel = ui->tableView->selectionModel();
-	const QModelIndexList selections = selModel->selectedRows();
+	const QItemSelectionModel *const selModel = ui.tableView->selectionModel();
+	const QModelIndexList selections          = selModel->selectedRows();
 
-	if(selections.size() == 1) {
+	if (selections.size() == 1) {
 		QModelIndex index = selections[0];
 		model_->deleteBookmark(index);
 	}
 }
 
-//------------------------------------------------------------------------------
-// Name: on_btnClear_clicked
-// Desc:
-//------------------------------------------------------------------------------
-void BookmarkWidget::on_btnClear_clicked() {
+/**
+ * @brief BookmarkWidget::buttonClearClicked
+ */
+void BookmarkWidget::buttonClearClicked() {
 	model_->clearBookmarks();
 }
 
-//------------------------------------------------------------------------------
-// Name: add_address
-// Desc:
-//------------------------------------------------------------------------------
-void BookmarkWidget::add_address(edb::address_t address, const QString &type, const QString &comment) {
+/**
+ * @brief BookmarkWidget::addAddress
+ * @param address
+ * @param type
+ * @param comment
+ */
+void BookmarkWidget::addAddress(edb::address_t address, const QString &type, const QString &comment) {
 
-	QVector<BookmarksModel::Bookmark> &bookmarks = model_->bookmarks();
+	const QVector<BookmarksModel::Bookmark> &bookmarks = model_->bookmarks();
+
 	auto it = std::find_if(bookmarks.begin(), bookmarks.end(), [address](const BookmarksModel::Bookmark &bookmark) {
 		return bookmark.address == address;
 	});
 
-
-	if(it == bookmarks.end()) {
+	if (it == bookmarks.end()) {
 		BookmarksModel::Bookmark bookmark = {
-			address, BookmarksModel::BookmarkStringToType(type), comment
+			address,
+			BookmarksModel::bookmarkStringToType(type),
+			comment,
 		};
 
 		model_->addBookmark(bookmark);
 	}
 }
 
-//------------------------------------------------------------------------------
-// Name: shortcut
-// Desc:
-//------------------------------------------------------------------------------
+/**
+ * @brief BookmarkWidget::shortcut
+ * @param index
+ */
 void BookmarkWidget::shortcut(int index) {
 
-	QVector<BookmarksModel::Bookmark> &bookmarks = model_->bookmarks();
-	if(index < bookmarks.size()) {
-		BookmarksModel::Bookmark *item = &bookmarks[index];
+	const QVector<BookmarksModel::Bookmark> &bookmarks = model_->bookmarks();
+	if (index < bookmarks.size()) {
+		const BookmarksModel::Bookmark *item = &bookmarks[index];
 
-		switch(item->type) {
+		switch (item->type) {
 		case BookmarksModel::Bookmark::Code:
 			edb::v1::jump_to_address(item->address);
 			break;
@@ -178,60 +172,60 @@ void BookmarkWidget::shortcut(int index) {
 	}
 }
 
-//------------------------------------------------------------------------------
-// Name: on_tableView_customContextMenuRequested
-// Desc:
-//------------------------------------------------------------------------------
+/**
+ * @brief BookmarkWidget::on_tableView_customContextMenuRequested
+ * @param pos
+ */
 void BookmarkWidget::on_tableView_customContextMenuRequested(const QPoint &pos) {
 
 	QMenu menu;
-	QAction *const actionAdd     = menu.addAction(tr("&Add Address"));
-	QAction *const actionDel     = menu.addAction(tr("&Delete Address"));
-	QAction *const actionClear   = menu.addAction(tr("&Clear"));
+	QAction *const actionAdd   = menu.addAction(tr("&Add Address"));
+	QAction *const actionDel   = menu.addAction(tr("&Delete Address"));
+	QAction *const actionClear = menu.addAction(tr("&Clear"));
 	menu.addSeparator();
 	QAction *const actionComment = menu.addAction(tr("&Set Comment"));
 	QAction *const actionType    = menu.addAction(tr("Set &Type"));
-	QAction *const chosen = menu.exec(ui->tableView->mapToGlobal(pos));
+	QAction *const chosen        = menu.exec(ui.tableView->mapToGlobal(pos));
 
-	if(chosen == actionAdd) {
-		on_btnAdd_clicked();
-	} else if(chosen == actionDel) {
-		on_btnDel_clicked();
-	} else if(chosen == actionClear) {
-		on_btnClear_clicked();
-	} else if(chosen == actionComment) {
+	if (chosen == actionAdd) {
+		buttonAddClicked();
+	} else if (chosen == actionDel) {
+		buttonDelClicked();
+	} else if (chosen == actionClear) {
+		buttonClearClicked();
+	} else if (chosen == actionComment) {
 
-		const QItemSelectionModel *const selModel = ui->tableView->selectionModel();
-		const QModelIndexList selections = selModel->selectedRows();
+		const QItemSelectionModel *const selModel = ui.tableView->selectionModel();
+		const QModelIndexList selections          = selModel->selectedRows();
 
-		if(selections.size() == 1) {
+		if (selections.size() == 1) {
 			QModelIndex index = selections[0];
 
-			if(auto item = static_cast<BookmarksModel::Bookmark *>(index.internalPointer())) {
+			if (auto item = static_cast<BookmarksModel::Bookmark *>(index.internalPointer())) {
 				QString old_comment = item->comment;
 				bool ok;
-				const QString new_comment = QInputDialog::getText(ui->tableView, tr("Comment"), tr("Set Comment:"), QLineEdit::Normal, old_comment, &ok);
-				if(ok) {
+				const QString new_comment = QInputDialog::getText(ui.tableView, tr("Comment"), tr("Set Comment:"), QLineEdit::Normal, old_comment, &ok);
+				if (ok) {
 					model_->setComment(index, new_comment);
 				}
 			}
 		}
-	} else if(chosen == actionType) {
-		const QItemSelectionModel *const selModel = ui->tableView->selectionModel();
-		const QModelIndexList selections = selModel->selectedRows();
+	} else if (chosen == actionType) {
+		const QItemSelectionModel *const selModel = ui.tableView->selectionModel();
+		const QModelIndexList selections          = selModel->selectedRows();
 
-		if(selections.size() == 1) {
+		if (selections.size() == 1) {
 			QModelIndex index = selections[0];
 
-			if(auto item = static_cast<BookmarksModel::Bookmark *>(index.internalPointer())) {
+			if (auto item = static_cast<BookmarksModel::Bookmark *>(index.internalPointer())) {
 
-				QString old_type = BookmarksModel::BookmarkTypeToString(item->type);
+				QString old_type = BookmarksModel::bookmarkTypeToString(item->type);
 				QStringList items;
 				items << tr("Code") << tr("Data") << tr("Stack");
 
 				bool ok;
-				const QString new_type = QInputDialog::getItem(ui->tableView, tr("Comment"), tr("Set Type:"), items, items.indexOf(old_type), false, &ok);
-				if(ok) {
+				const QString new_type = QInputDialog::getItem(ui.tableView, tr("Comment"), tr("Set Type:"), items, items.indexOf(old_type), false, &ok);
+				if (ok) {
 					model_->setType(index, new_type);
 				}
 			}
@@ -239,12 +233,12 @@ void BookmarkWidget::on_tableView_customContextMenuRequested(const QPoint &pos) 
 	}
 }
 
-//------------------------------------------------------------------------------
-// Name: entries
-// Desc:
-//------------------------------------------------------------------------------
+/**
+ * @brief BookmarkWidget::entries
+ * @return
+ */
 QList<BookmarksModel::Bookmark> BookmarkWidget::entries() const {
-	QVector<BookmarksModel::Bookmark> &bookmarks = model_->bookmarks();
+	const QVector<BookmarksModel::Bookmark> &bookmarks = model_->bookmarks();
 	return bookmarks.toList();
 }
 

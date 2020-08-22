@@ -16,33 +16,29 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef DIALOGBINARYSTRING_20061101_H_
-#define DIALOGBINARYSTRING_20061101_H_
+#ifndef DIALOG_BINARY_STRING_H_20061101_
+#define DIALOG_BINARY_STRING_H_20061101_
 
+#include "ui_DialogBinaryString.h"
 #include <QDialog>
 
 class QListWidgetItem;
 
 namespace BinarySearcherPlugin {
 
-namespace Ui { class DialogBinaryString; }
-
 class DialogBinaryString : public QDialog {
 	Q_OBJECT
 
 public:
-    explicit DialogBinaryString(QWidget *parent = nullptr);
-	~DialogBinaryString() override;
-
-public Q_SLOTS:
-	void on_btnFind_clicked();
-	void on_listWidget_itemDoubleClicked(QListWidgetItem *);
+	explicit DialogBinaryString(QWidget *parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
+	~DialogBinaryString() override = default;
 
 private:
-	void do_find();
+	void doFind();
 
 private:
-	 Ui::DialogBinaryString *const ui;
+	Ui::DialogBinaryString ui;
+	QPushButton *buttonFind_ = nullptr;
 };
 
 }

@@ -16,40 +16,42 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef DIALOGOPTIONS_20061101_H_
-#define DIALOGOPTIONS_20061101_H_
+#ifndef DIALOG_OPTIONS_H_20061101_
+#define DIALOG_OPTIONS_H_20061101_
 
 #include <QDialog>
 
-namespace Ui { class DialogOptions; }
+#include "ui_DialogOptions.h"
 
 class QToolBox;
 
-class DialogOptions : public QDialog {
+class DialogOptions final : public QDialog {
 	Q_OBJECT
 public:
-    explicit DialogOptions(QWidget *parent = nullptr);
-    ~DialogOptions() override;
+	explicit DialogOptions(QWidget *parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
+	~DialogOptions() override = default;
 
 public Q_SLOTS:
 	void on_btnSymbolDir_clicked();
 	void on_btnPluginDir_clicked();
 	void on_btnTTY_clicked();
 	void on_btnSessionDir_clicked();
-    void closeEvent(QCloseEvent *event) override;
-    void accept() override;
+
+protected:
+	void closeEvent(QCloseEvent *event) override;
+	void accept() override;
 
 public:
-    void showEvent(QShowEvent *event) override;
+	void showEvent(QShowEvent *event) override;
 	void addOptionsPage(QWidget *page);
 
 private:
-	QString font_from_dialog(const QString &default_font);
-	QString directory_from_dialog();
+	QString fontFromDialog(const QString &default_font);
+	QString directoryFromDialog();
 
 private:
-	Ui::DialogOptions *const ui;
-	QToolBox *               toolbox_;
+	Ui::DialogOptions ui;
+	QToolBox *toolbox_ = nullptr;
 };
 
 #endif

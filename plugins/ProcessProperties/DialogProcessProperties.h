@@ -16,23 +16,22 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef DIALOG_PROCESS_PROPERTIES_20120817_H_
-#define DIALOG_PROCESS_PROPERTIES_20120817_H_
+#ifndef DIALOG_PROCESS_PROPERTIES_H_20120817_
+#define DIALOG_PROCESS_PROPERTIES_H_20120817_
 
 #include "ThreadsModel.h"
+#include "ui_DialogProcessProperties.h"
 #include <QDialog>
 #include <QSortFilterProxyModel>
 
 namespace ProcessPropertiesPlugin {
 
-namespace Ui { class DialogProcessProperties; }
-
 class DialogProcessProperties : public QDialog {
 	Q_OBJECT
 
 public:
-    explicit DialogProcessProperties(QWidget *parent = nullptr);
-    ~DialogProcessProperties() override;
+	explicit DialogProcessProperties(QWidget *parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
+	~DialogProcessProperties() override = default;
 
 public Q_SLOTS:
 	void on_btnParent_clicked();
@@ -53,17 +52,12 @@ private:
 	void updateEnvironmentPage(const QString &filter);
 
 private:
-#if defined(Q_OS_LINUX)
-	static QString file_type(const QString &filename);
-#endif
+	void showEvent(QShowEvent *event) override;
 
 private:
-    void showEvent(QShowEvent *event) override;
-
-private:
-	Ui::DialogProcessProperties *const ui;
-	ThreadsModel          *threads_model_;
-	QSortFilterProxyModel *threads_filter_;
+	Ui::DialogProcessProperties ui;
+	ThreadsModel *threadsModel_           = nullptr;
+	QSortFilterProxyModel *threadsFilter_ = nullptr;
 };
 
 }

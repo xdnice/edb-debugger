@@ -29,28 +29,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <QSortFilterProxyModel>
 #include <QString>
 
-#include "ui_DialogMemoryRegions.h"
-
 //------------------------------------------------------------------------------
 // Name: DialogMemoryRegions
 // Desc:
 //------------------------------------------------------------------------------
-DialogMemoryRegions::DialogMemoryRegions(QWidget *parent) : QDialog(parent), ui(new Ui::DialogMemoryRegions) {
-	ui->setupUi(this);
+DialogMemoryRegions::DialogMemoryRegions(QWidget *parent, Qt::WindowFlags f)
+	: QDialog(parent, f) {
+	ui.setupUi(this);
 
-	ui->regions_table->verticalHeader()->hide();
-	ui->regions_table->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
-	filter_model_ = new QSortFilterProxyModel(this);
+	ui.regions_table->verticalHeader()->hide();
+	ui.regions_table->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+	filterModel_ = new QSortFilterProxyModel(this);
 
-	connect(ui->filter, &QLineEdit::textChanged, filter_model_, &QSortFilterProxyModel::setFilterFixedString);
-}
-
-//------------------------------------------------------------------------------
-// Name: ~DialogMemoryRegions
-// Desc:
-//------------------------------------------------------------------------------
-DialogMemoryRegions::~DialogMemoryRegions() {
-	delete ui;
+	connect(ui.filter, &QLineEdit::textChanged, filterModel_, &QSortFilterProxyModel::setFilterFixedString);
 }
 
 //------------------------------------------------------------------------------
@@ -59,9 +50,9 @@ DialogMemoryRegions::~DialogMemoryRegions() {
 //------------------------------------------------------------------------------
 void DialogMemoryRegions::showEvent(QShowEvent *) {
 
-	filter_model_->setFilterKeyColumn(3);
-	filter_model_->setSourceModel(&edb::v1::memory_regions());
-	ui->regions_table->setModel(filter_model_);
+	filterModel_->setFilterKeyColumn(3);
+	filterModel_->setSourceModel(&edb::v1::memory_regions());
+	ui.regions_table->setModel(filterModel_);
 }
 
 //------------------------------------------------------------------------------
@@ -72,46 +63,46 @@ void DialogMemoryRegions::on_regions_table_customContextMenuRequested(const QPoi
 
 	QMenu menu;
 	auto access_menu = new QMenu(tr("Set Access"), this);
-	access_menu->addAction(tr("No Access"), this, SLOT(set_access_none()));   // ---
-	access_menu->addAction(tr("Read Only"), this, SLOT(set_access_r()));      // r--
-	access_menu->addAction(tr("Write Only"), this, SLOT(set_access_w()));     // -w-
-	access_menu->addAction(tr("Execute Only"), this, SLOT(set_access_x()));   // --x
-	access_menu->addAction(tr("Read/Write"), this, SLOT(set_access_rw()));    // rw-
-	access_menu->addAction(tr("Read/Execute"), this, SLOT(set_access_rx()));  // r-x
-	access_menu->addAction(tr("Write/Execute"), this, SLOT(set_access_wx())); // -wx
-	access_menu->addAction(tr("Full Access"), this, SLOT(set_access_rwx()));  // rwx
+	access_menu->addAction(tr("No Access"), this, SLOT(setAccessNone()));   // ---
+	access_menu->addAction(tr("Read Only"), this, SLOT(setAccessR()));      // r--
+	access_menu->addAction(tr("Write Only"), this, SLOT(setAccessW()));     // -w-
+	access_menu->addAction(tr("Execute Only"), this, SLOT(setAccessX()));   // --x
+	access_menu->addAction(tr("Read/Write"), this, SLOT(setAccessRW()));    // rw-
+	access_menu->addAction(tr("Read/Execute"), this, SLOT(setAccessRX()));  // r-x
+	access_menu->addAction(tr("Write/Execute"), this, SLOT(setAccessWX())); // -wx
+	access_menu->addAction(tr("Full Access"), this, SLOT(setAccessRWX()));  // rwx
 
 	menu.addMenu(access_menu);
 	menu.addSeparator();
-	menu.addAction(tr("View in &CPU"), this, SLOT(view_in_cpu()));
-	menu.addAction(tr("View in &Stack"), this, SLOT(view_in_stack()));
-	menu.addAction(tr("View in &Dump"), this, SLOT(view_in_dump()));
-	menu.exec(ui->regions_table->mapToGlobal(pos));
+	menu.addAction(tr("View in &CPU"), this, SLOT(viewInCpu()));
+	menu.addAction(tr("View in &Stack"), this, SLOT(viewInStack()));
+	menu.addAction(tr("View in &Dump"), this, SLOT(viewInDump()));
+	menu.exec(ui.regions_table->mapToGlobal(pos));
 }
 
 //------------------------------------------------------------------------------
 // Name: selected_region
 // Desc:
 //------------------------------------------------------------------------------
-std::shared_ptr<IRegion> DialogMemoryRegions::selected_region() const {
-	const QItemSelectionModel *const selModel = ui->regions_table->selectionModel();
-	const QModelIndexList sel = selModel->selectedRows();
-	std::shared_ptr<IRegion> ret;
-	if(sel.size() == 1) {
-		const QModelIndex index = filter_model_->mapToSource(sel[0]);
-		ret = *reinterpret_cast<std::shared_ptr<IRegion> *>(index.internalPointer());
+std::shared_ptr<IRegion> DialogMemoryRegions::selectedRegion() const {
+	const QItemSelectionModel *const selModel = ui.regions_table->selectionModel();
+	const QModelIndexList sel                 = selModel->selectedRows();
+
+	if (sel.size() == 1) {
+		const QModelIndex index = filterModel_->mapToSource(sel[0]);
+		return *reinterpret_cast<std::shared_ptr<IRegion> *>(index.internalPointer());
 	}
 
-	return ret;
+	return {};
 }
 
 //------------------------------------------------------------------------------
 // Name: set_permissions
 // Desc:
 //------------------------------------------------------------------------------
-void DialogMemoryRegions::set_permissions(bool read, bool write, bool execute) {
-	if(std::shared_ptr<IRegion> region = selected_region()) {
-		region->set_permissions(read, write, execute);
+void DialogMemoryRegions::setPermissions(bool read, bool write, bool execute) {
+	if (std::shared_ptr<IRegion> region = selectedRegion()) {
+		region->setPermissions(read, write, execute);
 		edb::v1::memory_regions().sync();
 	}
 }
@@ -120,72 +111,72 @@ void DialogMemoryRegions::set_permissions(bool read, bool write, bool execute) {
 // Name: set_access_none
 // Desc:
 //------------------------------------------------------------------------------
-void DialogMemoryRegions::set_access_none() {
-	set_permissions(false, false, false);
+void DialogMemoryRegions::setAccessNone() {
+	setPermissions(false, false, false);
 }
 
 //------------------------------------------------------------------------------
 // Name: set_access_r
 // Desc:
 //------------------------------------------------------------------------------
-void DialogMemoryRegions::set_access_r() {
-	set_permissions(true, false, false);
+void DialogMemoryRegions::setAccessR() {
+	setPermissions(true, false, false);
 }
 
 //------------------------------------------------------------------------------
 // Name: set_access_w
 // Desc:
 //------------------------------------------------------------------------------
-void DialogMemoryRegions::set_access_w() {
-	set_permissions(false, true, false);
+void DialogMemoryRegions::setAccessW() {
+	setPermissions(false, true, false);
 }
 
 //------------------------------------------------------------------------------
 // Name: set_access_x
 // Desc:
 //------------------------------------------------------------------------------
-void DialogMemoryRegions::set_access_x() {
-	set_permissions(false, false, true);
+void DialogMemoryRegions::setAccessX() {
+	setPermissions(false, false, true);
 }
 
 //------------------------------------------------------------------------------
 // Name: set_access_rw
 // Desc:
 //------------------------------------------------------------------------------
-void DialogMemoryRegions::set_access_rw() {
-	set_permissions(true, true, false);
+void DialogMemoryRegions::setAccessRW() {
+	setPermissions(true, true, false);
 }
 
 //------------------------------------------------------------------------------
 // Name: set_access_rx
 // Desc:
 //------------------------------------------------------------------------------
-void DialogMemoryRegions::set_access_rx() {
-	set_permissions(true, false, true);
+void DialogMemoryRegions::setAccessRX() {
+	setPermissions(true, false, true);
 }
 
 //------------------------------------------------------------------------------
 // Name: set_access_wx
 // Desc:
 //------------------------------------------------------------------------------
-void DialogMemoryRegions::set_access_wx() {
-	set_permissions(false, true, true);
+void DialogMemoryRegions::setAccessWX() {
+	setPermissions(false, true, true);
 }
 
 //------------------------------------------------------------------------------
 // Name: set_access_rwx
 // Desc:
 //------------------------------------------------------------------------------
-void DialogMemoryRegions::set_access_rwx() {
-	set_permissions(true, true, true);
+void DialogMemoryRegions::setAccessRWX() {
+	setPermissions(true, true, true);
 }
 
 //------------------------------------------------------------------------------
 // Name: view_in_cpu
 // Desc:
 //------------------------------------------------------------------------------
-void DialogMemoryRegions::view_in_cpu() {
-	if(std::shared_ptr<IRegion> region = selected_region()) {
+void DialogMemoryRegions::viewInCpu() {
+	if (std::shared_ptr<IRegion> region = selectedRegion()) {
 		edb::v1::jump_to_address(region->start());
 	}
 }
@@ -194,8 +185,8 @@ void DialogMemoryRegions::view_in_cpu() {
 // Name: view_in_stack
 // Desc:
 //------------------------------------------------------------------------------
-void DialogMemoryRegions::view_in_stack() {
-	if(std::shared_ptr<IRegion> region = selected_region()) {
+void DialogMemoryRegions::viewInStack() {
+	if (std::shared_ptr<IRegion> region = selectedRegion()) {
 		edb::v1::dump_stack(region->start(), true);
 	}
 }
@@ -204,8 +195,8 @@ void DialogMemoryRegions::view_in_stack() {
 // Name: view_in_dump
 // Desc:
 //------------------------------------------------------------------------------
-void DialogMemoryRegions::view_in_dump() {
-	if(std::shared_ptr<IRegion> region = selected_region()) {
+void DialogMemoryRegions::viewInDump() {
+	if (std::shared_ptr<IRegion> region = selectedRegion()) {
 		edb::v1::dump_data(region->start(), true);
 	}
 }
@@ -215,8 +206,8 @@ void DialogMemoryRegions::view_in_dump() {
 // Desc:
 //------------------------------------------------------------------------------
 void DialogMemoryRegions::on_regions_table_doubleClicked(const QModelIndex &index) {
-	Q_UNUSED(index);
-	if(std::shared_ptr<IRegion> region = selected_region()) {
+	Q_UNUSED(index)
+	if (std::shared_ptr<IRegion> region = selectedRegion()) {
 		if (region->executable()) {
 			edb::v1::jump_to_address(region->start());
 		} else {
@@ -224,4 +215,3 @@ void DialogMemoryRegions::on_regions_table_doubleClicked(const QModelIndex &inde
 		}
 	}
 }
-

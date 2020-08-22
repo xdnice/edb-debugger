@@ -16,8 +16,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef QULONGVALIDATOR_20071128_H_
-#define QULONGVALIDATOR_20071128_H_
+#ifndef QULONG_VALIDATOR_H_20071128_
+#define QULONG_VALIDATOR_H_20071128_
 
 #include "API.h"
 #include <QValidator>
@@ -29,14 +29,14 @@ public:
 	using value_type = std::uint64_t;
 
 public:
-    explicit QULongValidator(QObject *parent = nullptr);
-    QULongValidator(value_type minimum, value_type maximum, QObject *parent = nullptr);
-    ~QULongValidator() override = default;
+	explicit QULongValidator(QObject *parent = nullptr);
+	QULongValidator(value_type minimum, value_type maximum, QObject *parent = nullptr);
+	~QULongValidator() override = default;
 
 public:
 	value_type bottom() const;
 	value_type top() const;
-    QValidator::State validate(QString &input, int &pos) const override;
+	QValidator::State validate(QString &input, int &pos) const override;
 	void setRange(value_type bottom, value_type top);
 	void setBottom(value_type bottom);
 	void setTop(value_type top);
@@ -47,4 +47,3 @@ private:
 };
 
 #endif
-

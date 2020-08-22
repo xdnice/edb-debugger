@@ -1,6 +1,6 @@
 
-#ifndef FORMATTER_H_
-#define FORMATTER_H_
+#ifndef FORMATTER_H_20191119_
+#define FORMATTER_H_20191119_
 
 #include "API.h"
 #include <string>
@@ -14,8 +14,8 @@ class Instruction;
 class EDB_EXPORT Formatter {
 public:
 	enum Syntax {
-		SyntaxIntel, 
-		SyntaxATT
+		SyntaxIntel,
+		SyntaxAtt
 	};
 
 	enum Capitalization {
@@ -24,16 +24,16 @@ public:
 	};
 
 	struct FormatOptions {
-		Syntax         syntax;
+		Syntax syntax;
 		Capitalization capitalization;
-		bool           tabBetweenMnemonicAndOperands;
-		bool           simplifyRIPRelativeTargets;
+		bool tabBetweenMnemonicAndOperands;
+		bool simplifyRIPRelativeTargets;
 	};
 
 public:
-	std::string to_string(const Instruction &) const;
-	std::string to_string(const Operand &) const;
-	std::string register_name(unsigned int) const;
+	std::string toString(const Instruction &insn) const;
+	std::string toString(const Operand &operand) const;
+	std::string registerName(unsigned int reg) const;
 
 	FormatOptions options() const {
 		return options_;

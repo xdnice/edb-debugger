@@ -16,14 +16,16 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef SYMBOLS_20110312_H_
-#define SYMBOLS_20110312_H_
+#ifndef SYMBOLS_H_20110312_
+#define SYMBOLS_H_20110312_
 
 class QString;
 #include <iostream>
 
 namespace BinaryInfoPlugin {
+
 bool generate_symbols(const QString &filename, std::ostream &os = std::cout);
+
 }
 
 #endif

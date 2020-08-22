@@ -16,8 +16,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef CHECKVERSION_20061122_H_
-#define CHECKVERSION_20061122_H_
+#ifndef CHECK_VERSION_H_20061122_
+#define CHECK_VERSION_H_20061122_
 
 #include "IPlugin.h"
 
@@ -36,28 +36,30 @@ class CheckVersion : public QObject, public IPlugin {
 	Q_CLASSINFO("url", "http://www.codef00.com")
 
 public:
-	CheckVersion(QObject *parent = nullptr);
+	explicit CheckVersion(QObject *parent = nullptr);
 	~CheckVersion() override = default;
 
 public:
 	QMenu *menu(QWidget *parent = nullptr) override;
-	QWidget *options_page() override;
+	QWidget *optionsPage() override;
 
 public Q_SLOTS:
-	void show_menu();
+	void showMenu();
+
+private:
 	void requestFinished(QNetworkReply *reply);
 
 protected:
-	void private_init() override;
+	void privateInit() override;
 
 private:
-	void do_check();
-	void set_proxy(const QUrl &url);
+	void doCheck();
+	void setProxy(const QUrl &url);
 
 private:
-	QMenu                 *menu_          = nullptr;
-	QNetworkAccessManager *network_       = nullptr;
-	bool                   initial_check_ = true;
+	QMenu *menu_                    = nullptr;
+	QNetworkAccessManager *network_ = nullptr;
+	bool initialCheck_              = true;
 };
 
 }

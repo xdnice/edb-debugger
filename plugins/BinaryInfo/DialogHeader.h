@@ -1,6 +1,6 @@
 /*
 Copyright (C) 2006 - 2015 Evan Teran
-                          evan.teran@gmail.com
+						  evan.teran@gmail.com
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -16,11 +16,14 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef DIALOG_HEADER_20111128_H_
-#define DIALOG_HEADER_20111128_H_
+#ifndef DIALOG_HEADER_H_20190403_
+#define DIALOG_HEADER_H_20190403_
 
+#include "IRegion.h"
 #include "Types.h"
+#include "ui_DialogHeader.h"
 #include <QDialog>
+#include <memory>
 
 class QStringListModel;
 class QSortFilterProxyModel;
@@ -28,24 +31,15 @@ class QModelIndex;
 
 namespace BinaryInfoPlugin {
 
-namespace Ui { class DialogHeader; }
-
 class DialogHeader : public QDialog {
 	Q_OBJECT
 
 public:
-    explicit DialogHeader(QWidget *parent = nullptr);
-	~DialogHeader() override;
-
-public Q_SLOTS:
-	void on_btnExplore_clicked();
+	explicit DialogHeader(const std::shared_ptr<IRegion> &region, QWidget *parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
+	~DialogHeader() override = default;
 
 private:
-	void showEvent(QShowEvent *event) override;
-
-private:
-	 Ui::DialogHeader *const ui;
-	 QSortFilterProxyModel *filter_model_;
+	Ui::DialogHeader ui;
 };
 
 }

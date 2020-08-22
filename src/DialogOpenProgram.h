@@ -15,8 +15,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef DIALOG_OPEN_PROGRAM_H_20151117
-#define DIALOG_OPEN_PROGRAM_H_20151117
+#ifndef DIALOG_OPEN_PROGRAM_H_20151117_
+#define DIALOG_OPEN_PROGRAM_H_20151117_
 
 #include <QFileDialog>
 #include <QList>
@@ -25,24 +25,21 @@ class QLineEdit;
 class QByteArray;
 
 class DialogOpenProgram : public QFileDialog {
-	Q_OBJECT // This also enables QFileDialog::DontUseNativeDialog, so that we get Qt dialog on any platform
+	Q_OBJECT
 
 public:
-	DialogOpenProgram(QWidget* parent=0,
-					  const QString& caption=QString(),
-					  const QString& directory=QString(),
-					  const QString& filter=QString());
-	
-public:				  
+	explicit DialogOpenProgram(QWidget *parent = nullptr, const QString &caption = QString(), const QString &directory = QString(), const QString &filter = QString());
+
+public:
 	QList<QByteArray> arguments() const;
 	QString workingDirectory() const;
-	
+
 private Q_SLOTS:
 	void browsePressed();
-	
+
 private:
-	QLineEdit *argsEdit;
-	QLineEdit *workDir;
+	QLineEdit *argsEdit_;
+	QLineEdit *workDir_;
 };
 
 #endif

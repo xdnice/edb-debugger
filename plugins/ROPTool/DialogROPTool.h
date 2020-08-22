@@ -16,18 +16,19 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef DIALOG_ROPTOOL_20100817_H_
-#define DIALOG_ROPTOOL_20100817_H_
+#ifndef DIALOG_ROPTOOL_H_20100817_
+#define DIALOG_ROPTOOL_H_20100817_
 
-#include "Types.h"
 #include "Instruction.h"
+#include "Types.h"
+#include "ui_DialogROPTool.h"
 
 #include <QDialog>
-#include <QSet>
 #include <QList>
+#include <QSet>
 #include <QSortFilterProxyModel>
-#include <vector>
 #include <memory>
+#include <vector>
 
 class QListWidgetItem;
 class QModelIndex;
@@ -38,75 +39,30 @@ class QStandardItemModel;
 namespace ROPToolPlugin {
 
 class ResultFilterProxy;
-
-namespace Ui { class DialogROPTool; }
-
-class ResultFilterProxy : public QSortFilterProxyModel {
-	Q_OBJECT
-public:
-    explicit ResultFilterProxy(QObject *parent = nullptr) : QSortFilterProxyModel(parent), mask_(0) {
-	}
-
-public:
-	void set_mask_bit(uint32_t mask, bool value) {
-
-		beginResetModel();
-
-		if(value) {
-			mask_ |= mask;
-		} else {
-			mask_ &= ~mask;
-		}
-
-		endResetModel();
-	}
-
-protected:
-	bool filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const {
-		QModelIndex index = sourceModel()->index(sourceRow, 0, sourceParent);
-		if(index.data(Qt::UserRole + 1).toUInt() & mask_) {
-			return true;
-		}
-		return false;
-	}
-	
-private:
-	uint32_t mask_;
-};
+class DialogResults;
 
 class DialogROPTool : public QDialog {
 	Q_OBJECT
 
 public:
-    explicit DialogROPTool(QWidget *parent = nullptr);
-    ~DialogROPTool() override;
-
-public Q_SLOTS:
-	void on_btnFind_clicked();
-	void on_listView_doubleClicked(const QModelIndex &index);
-	void on_chkShowALU_stateChanged(int state);
-	void on_chkShowStack_stateChanged(int state);
-	void on_chkShowLogic_stateChanged(int state);
-	void on_chkShowData_stateChanged(int state);
-	void on_chkShowOther_stateChanged(int state);
+	explicit DialogROPTool(QWidget *parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
+	~DialogROPTool() override = default;
 
 private:
 	using InstructionList = std::vector<std::shared_ptr<edb::Instruction>>;
-	
-private:
-	void do_find();
-	void add_gadget(const InstructionList &instructions);
-	void set_gadget_role(QStandardItem *item, const edb::Instruction &inst1);
 
 private:
-    void showEvent(QShowEvent *event) override;
+	void doFind();
+	void addGadget(DialogResults *results, const InstructionList &instructions);
 
 private:
-	Ui::DialogROPTool *const ui;
-	QSortFilterProxyModel *  filter_model_;
-	QStandardItemModel *     result_model_;
-	ResultFilterProxy *      result_filter_;
-	QSet<QString>            unique_results_;
+	void showEvent(QShowEvent *event) override;
+
+private:
+	Ui::DialogROPTool ui;
+	QSortFilterProxyModel *filterModel_ = nullptr;
+	QSet<QString> uniqueResults_;
+	QPushButton *buttonFind_ = nullptr;
 };
 
 }

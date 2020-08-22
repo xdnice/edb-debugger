@@ -16,13 +16,13 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef IBINARY_20070718_H_
-#define IBINARY_20070718_H_
+#ifndef IBINARY_H_20070718_
+#define IBINARY_H_20070718_
 
 #include "API.h"
 #include "Types.h"
-#include <vector>
 #include <memory>
+#include <vector>
 
 class IRegion;
 
@@ -30,30 +30,22 @@ class EDB_EXPORT IBinary {
 public:
 	struct Header {
 		edb::address_t address;
-		size_t         size;
+		size_t size;
 		// TODO(eteran): maybe label/type/etc...
 	};
+
 public:
 	virtual ~IBinary() = default;
 
 public:
-	virtual bool native() const = 0;
-	virtual edb::address_t calculate_main() = 0;
-	virtual edb::address_t entry_point() = 0;
-	virtual size_t header_size() const = 0;
-	virtual const void *header() const = 0;
+	virtual bool native() const                 = 0;
+	virtual edb::address_t entryPoint()         = 0;
+	virtual size_t headerSize() const           = 0;
+	virtual const void *header() const          = 0;
 	virtual std::vector<Header> headers() const = 0;
-	virtual edb::address_t base_address() const = 0;
-
-public:
-	// optional, and platform specific:
-	// if there is a structure in the target process which has debug data
-	// this should return a pointer to it
-	virtual edb::address_t debug_pointer() { return edb::address_t(0); }
 
 public:
 	using create_func_ptr_t = std::unique_ptr<IBinary> (*)(const std::shared_ptr<IRegion> &);
 };
 
 #endif
-

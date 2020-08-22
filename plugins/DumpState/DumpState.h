@@ -16,8 +16,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef CHECKVERSION_20061122_H_
-#define CHECKVERSION_20061122_H_
+#ifndef DUMP_STATE_H_20061122_
+#define DUMP_STATE_H_20061122_
 
 #include "IPlugin.h"
 #include "Types.h"
@@ -35,27 +35,27 @@ class DumpState : public QObject, public IPlugin {
 	Q_CLASSINFO("url", "http://www.codef00.com")
 
 public:
-	DumpState(QObject *parent = nullptr);
+	explicit DumpState(QObject *parent = nullptr);
 	~DumpState() override = default;
 
 public:
 	QMenu *menu(QWidget *parent = nullptr) override;
 
 public Q_SLOTS:
-	void show_menu();
+	void showMenu();
 
 private:
-	QWidget *options_page() override;
+	QWidget *optionsPage() override;
 
 private:
-	void dump_code(const State &state);
-	void dump_registers(const State &state);
-	void dump_stack(const State &state);
-	void dump_data(edb::address_t address);
-	void dump_lines(edb::address_t address, int lines);
+	void dumpCode(const State &state);
+	void dumpRegisters(const State &state);
+	void dumpStack(const State &state);
+	void dumpData(edb::address_t address);
+	void dumpLines(edb::address_t address, int lines);
 
 private:
-	QMenu * menu_ = nullptr;
+	QMenu *menu_ = nullptr;
 };
 
 }

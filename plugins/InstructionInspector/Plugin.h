@@ -15,8 +15,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef INSTRUCTION_INSPECTOR_PLUGIN_H_20160418
-#define INSTRUCTION_INSPECTOR_PLUGIN_H_20160418
+#ifndef INSTRUCTION_INSPECTOR_PLUGIN_H_20160418_
+#define INSTRUCTION_INSPECTOR_PLUGIN_H_20160418_
 
 #include "IPlugin.h"
 #include "edb.h"
@@ -30,29 +30,31 @@ class QTextBrowser;
 
 namespace InstructionInspector {
 
+class Disassembler;
+
 class InstructionDialog : public QDialog {
 	Q_OBJECT
-	
+
 public:
-	struct DisassemblyFailure     {};
+	struct DisassemblyFailure {};
 	struct InstructionReadFailure {};
 
 public:
-	explicit InstructionDialog(QWidget *parent = nullptr);
+	explicit InstructionDialog(QWidget *parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
 	~InstructionDialog() override;
 
 private Q_SLOTS:
 	void compareDisassemblers();
-	
+
 private:
-	QTreeWidget *             tree          = nullptr;
-	QPushButton *             compareButton = nullptr;
-	QVBoxLayout *             vbox          = nullptr;
-	QTextBrowser *            disassemblies = nullptr;
-	void *                    insn_         = nullptr;
-	void *                    disassembler_ = nullptr;
-	edb::address_t            address;
-	std::vector<std::uint8_t> insnBytes;
+	QTreeWidget *tree_           = nullptr;
+	QPushButton *buttonCompare_  = nullptr;
+	QVBoxLayout *layout_         = nullptr;
+	QTextBrowser *disassemblies_ = nullptr;
+	void *insn_                  = nullptr;
+	Disassembler *disassembler_  = nullptr;
+	edb::address_t address_;
+	std::vector<std::uint8_t> insnBytes_;
 };
 
 class Plugin : public QObject, public IPlugin {
@@ -63,15 +65,15 @@ class Plugin : public QObject, public IPlugin {
 	Q_CLASSINFO("email", "b7.10110111@gmail.com")
 
 public:
-	Plugin(QObject *parent = nullptr);
+	explicit Plugin(QObject *parent = nullptr);
 	QMenu *menu(QWidget *parent = nullptr) override;
-	QList<QAction *> cpu_context_menu() override;
+	QList<QAction *> cpuContextMenu() override;
 
-private Q_SLOTS:
+private:
 	void showDialog() const;
 
 private:
-	QAction *menuAction;
+	QAction *menuAction_ = nullptr;
 };
 
 }

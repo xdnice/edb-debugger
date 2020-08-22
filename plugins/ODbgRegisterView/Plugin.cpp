@@ -27,30 +27,33 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <QMainWindow>
 #include <QMenu>
 #include <QSettings>
-#include <QSignalMapper>
 
 namespace ODbgRegisterView {
-Q_DECLARE_NAMESPACE_TR(ODbgRegisterView)
+//Q_DECLARE_NAMESPACE_TR(ODbgRegisterView)
 
 namespace {
 const auto pluginName             = QLatin1String("ODbgRegisterView");
-const auto dockName               = tr("Registers");
 const auto dockNameSuffixTemplate = QString(" <%1>");
 const auto dockObjectNameTemplate = QString(pluginName + "-%1");
-const auto VIEW                   = QLatin1String("views");
+const auto views                  = QLatin1String("views");
 }
 
-Plugin::Plugin(QObject *parent) : QObject(parent), menu_(nullptr) {
-	connect(QCoreApplication::instance(), &QCoreApplication::aboutToQuit, this, &Plugin::saveState);
+Plugin::Plugin(QObject *parent)
+	: QObject(parent) {
+
+	connect(QCoreApplication::instance(), &QCoreApplication::aboutToQuit, this, &Plugin::saveSettings);
 }
 
+QString Plugin::dockName() const {
+	return tr("Registers");
+}
 
 void Plugin::setupDocks() {
 	QSettings settings;
 	settings.beginGroup(pluginName);
 
-	if (settings.value(VIEW + "/size").isValid()) {
-		const int size = settings.beginReadArray(VIEW);
+	if (settings.value(views + "/size").isValid()) {
+		const int size = settings.beginReadArray(views);
 		for (int i = 0; i < size; ++i) {
 			settings.setArrayIndex(i);
 			createRegisterView(settings.group());
@@ -60,10 +63,10 @@ void Plugin::setupDocks() {
 	}
 }
 
-void Plugin::saveState() const {
-	QSettings  settings;
-	const int  size     = registerViews_.size();
-	const auto arrayKey = pluginName + "/" + VIEW;
+void Plugin::saveSettings() const {
+	QSettings settings;
+	const int size      = registerViews_.size();
+	const auto arrayKey = pluginName + "/" + views;
 	settings.remove(arrayKey);
 	settings.beginWriteArray(arrayKey, size);
 	for (int i = 0; i < size; ++i) {
@@ -81,11 +84,11 @@ void Plugin::createRegisterView(const QString &settingsGroup) {
 	if (auto *const mainWindow = qobject_cast<QMainWindow *>(edb::v1::debugger_ui)) {
 		const auto regView = new ODBRegView(settingsGroup, mainWindow);
 		registerViews_.emplace_back(regView);
-		regView->setModel(&edb::v1::arch_processor().get_register_view_model());
+		regView->setModel(&edb::v1::arch_processor().registerViewModel());
 
-		const QString suffix            = registerViews_.size() > 1 ? dockNameSuffixTemplate.arg(registerViews_.size()) : "";
-		auto *const   regViewDockWidget = new QDockWidget(dockName + suffix, mainWindow);
-		const auto    viewNumber        = registerViews_.size();
+		const QString suffix          = registerViews_.size() > 1 ? dockNameSuffixTemplate.arg(registerViews_.size()) : "";
+		auto *const regViewDockWidget = new QDockWidget(dockName() + suffix, mainWindow);
+		const auto viewNumber         = registerViews_.size();
 		regViewDockWidget->setObjectName(dockObjectNameTemplate.arg(viewNumber));
 		regViewDockWidget->setWidget(regView);
 
@@ -106,13 +109,13 @@ void Plugin::createRegisterView(const QString &settingsGroup) {
 			}
 		}
 
-
 		Q_ASSERT(menu_);
 		const auto removeDockAction = new QAction(tr("Remove %1").arg(regViewDockWidget->windowTitle()), menu_);
-		const auto removeDockMapper = new QSignalMapper(menu_);
-		removeDockMapper->setMapping(removeDockAction, regViewDockWidget);
-		connect(removeDockAction, SIGNAL(triggered()), removeDockMapper, SLOT(map()));
-		connect(removeDockMapper, SIGNAL(mapped(QWidget *)), this, SLOT(removeDock(QWidget *)));
+
+		connect(removeDockAction, &QAction::triggered, this, [this, regViewDockWidget]() {
+			removeDock(regViewDockWidget);
+		});
+
 		menuDeleteRegViewActions_.emplace_back(removeDockAction);
 		menu_->addAction(removeDockAction);
 	}
@@ -122,9 +125,9 @@ void Plugin::renumerateDocks() const {
 	for (std::size_t i = 0; i < registerViews_.size(); ++i) {
 		const auto view = registerViews_[i];
 		Q_ASSERT(dynamic_cast<QDockWidget *>(view->parentWidget()));
-		const auto dock = view->parentWidget();
+		QWidget *dock = view->parentWidget();
 		dock->setObjectName(dockObjectNameTemplate.arg(i + 1));
-		dock->setWindowTitle(dockName + (i ? dockNameSuffixTemplate.arg(i + 1) : ""));
+		dock->setWindowTitle(dockName() + (i ? dockNameSuffixTemplate.arg(i + 1) : ""));
 	}
 }
 
@@ -132,7 +135,7 @@ void Plugin::removeDock(QWidget *whatToRemove) {
 	Q_ASSERT(dynamic_cast<QDockWidget *>(whatToRemove));
 	const auto dockToRemove = static_cast<QDockWidget *>(whatToRemove);
 
-	auto &     views(registerViews_);
+	auto &views(registerViews_);
 	const auto viewIter = std::find(views.begin(), views.end(), dockToRemove->widget());
 
 	const auto viewIndex = viewIter - views.begin();
@@ -176,7 +179,10 @@ QMenu *Plugin::menu(QWidget *parent) {
 		menu_ = new QMenu(tr("OllyDbg-like Register View"), parent);
 		{
 			const auto newRegisterView = new QAction(tr("New Register View"), menu_);
-			connect(newRegisterView, SIGNAL(triggered()), this, SLOT(createRegisterView()));
+			connect(newRegisterView, &QAction::triggered, this, [this](bool) {
+				createRegisterView();
+			});
+
 			menu_->addAction(newRegisterView);
 		}
 		// FIXME: setChecked calls currently don't really work, since at this stage mainWindow hasn't yet restored its state
@@ -216,13 +222,6 @@ QMenu *Plugin::menu(QWidget *parent) {
 	}
 
 	return menu_;
-}
-
-QList<QAction *> Plugin::cpu_context_menu() {
-
-	QList<QAction *> ret;
-
-	return ret;
 }
 
 }

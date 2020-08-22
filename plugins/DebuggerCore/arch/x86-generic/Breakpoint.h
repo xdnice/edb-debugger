@@ -16,17 +16,19 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef X86BREAKPOINT_20060720_H_
-#define X86BREAKPOINT_20060720_H_
+#ifndef X86_BREAKPOINT_H_20060720_
+#define X86_BREAKPOINT_H_20060720_
 
 #include "IBreakpoint.h"
 #include "Util.h"
+#include <QCoreApplication>
 #include <array>
 #include <vector>
 
 namespace DebuggerCorePlugin {
 
-class Breakpoint : public IBreakpoint {
+class Breakpoint final : public IBreakpoint {
+	Q_DECLARE_TR_FUNCTIONS(Breakpoint)
 public:
 	enum class TypeId {
 		Automatic = static_cast<int>(IBreakpoint::TypeId::Automatic),
@@ -44,45 +46,45 @@ public:
 
 		TYPE_COUNT
 	};
-	using Type=util::AbstractEnumData<IBreakpoint::TypeId, TypeId>;
+
+	using Type = util::AbstractEnumData<IBreakpoint::TypeId, TypeId>;
+
 public:
-    explicit Breakpoint(edb::address_t address);
-    ~Breakpoint() override;
+	explicit Breakpoint(edb::address_t address);
+	~Breakpoint() override;
 
 public:
 	edb::address_t address() const override { return address_; }
-	quint64 hit_count() const      override { return hit_count_; }
-	bool enabled() const           override { return enabled_; }
-	bool one_time() const          override { return one_time_; }
-	bool internal() const          override { return internal_; }
-	size_t size() const            override { return original_bytes_.size(); }
-	const quint8* original_bytes() const override { return &original_bytes_[0]; }
+	uint64_t hitCount() const override { return hitCount_; }
+	bool enabled() const override { return enabled_; }
+	bool oneTime() const override { return oneTime_; }
+	bool internal() const override { return internal_; }
+	size_t size() const override { return originalBytes_.size(); }
+	const uint8_t *originalBytes() const override { return &originalBytes_[0]; }
 	IBreakpoint::TypeId type() const override { return type_; }
-	size_t rewind_size() const override;
 
-	static std::vector<BreakpointType> supported_types();
-	static std::vector<size_t> possible_rewind_sizes();
+	static std::vector<BreakpointType> supportedTypes();
+	static std::vector<size_t> possibleRewindSizes();
 
 public:
-    bool enable() override;
-    bool disable() override;
-    void hit() override;
-    void set_one_time(bool value) override;
-    void set_internal(bool value) override;
-    void set_type(IBreakpoint::TypeId type) override;
-	void set_type(TypeId type);
+	bool enable() override;
+	bool disable() override;
+	void hit() override;
+	void setOneTime(bool value) override;
+	void setInternal(bool value) override;
+	void setType(IBreakpoint::TypeId type) override;
+	void setType(TypeId type);
 
 private:
-	std::vector<quint8>   original_bytes_;
-	edb::address_t        address_;
-	quint64               hit_count_ = 0;
-	bool                  enabled_   = false;
-	bool                  one_time_  = false;
-	bool                  internal_  = false;
-	Type                  type_;
+	std::vector<uint8_t> originalBytes_;
+	edb::address_t address_;
+	uint64_t hitCount_ = 0;
+	bool enabled_      = false;
+	bool oneTime_      = false;
+	bool internal_     = false;
+	Type type_;
 };
 
 }
 
 #endif
-

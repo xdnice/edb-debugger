@@ -16,8 +16,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef ASSEMBLER_20130611_H_
-#define ASSEMBLER_20130611_H_
+#ifndef ASSEMBLER_H_20130611_
+#define ASSEMBLER_H_20130611_
 
 #include "IPlugin.h"
 
@@ -34,16 +34,16 @@ class Assembler : public QObject, public IPlugin {
 	Q_CLASSINFO("url", "http://www.codef00.com")
 
 public:
-	Assembler(QObject *parent = nullptr);
+	explicit Assembler(QObject *parent = nullptr);
 	~Assembler() override;
 
 public:
 	QMenu *menu(QWidget *parent = nullptr) override;
-	QList<QAction *> cpu_context_menu() override;
-	QWidget *options_page() override;
+	QList<QAction *> cpuContextMenu() override;
+	QWidget *optionsPage() override;
 
-public Q_SLOTS:
-	void show_dialog();
+private:
+	void showDialog();
 
 private:
 	QPointer<QDialog> dialog_ = nullptr;

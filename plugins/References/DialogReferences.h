@@ -16,41 +16,40 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef DIALOGREFERENCES_20061101_H_
-#define DIALOGREFERENCES_20061101_H_
+#ifndef DIALOG_REFERENCES_H_20061101_
+#define DIALOG_REFERENCES_H_20061101_
 
-#include <QDialog>
-#include "Types.h"
 #include "IRegion.h"
+#include "Types.h"
+#include "ui_DialogReferences.h"
+#include <QDialog>
 
 class QListWidgetItem;
 
 namespace ReferencesPlugin {
 
-namespace Ui { class DialogReferences; }
-
 class DialogReferences : public QDialog {
 	Q_OBJECT
 
 public:
-    explicit DialogReferences(QWidget *parent = nullptr);
-    ~DialogReferences() override;
+	explicit DialogReferences(QWidget *parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
+	~DialogReferences() override = default;
 
 public Q_SLOTS:
-	void on_btnFind_clicked();
 	void on_listWidget_itemDoubleClicked(QListWidgetItem *item);
 
 Q_SIGNALS:
 	void updateProgress(int);
 
 private:
-    void showEvent(QShowEvent *event) override;
+	void showEvent(QShowEvent *event) override;
 
 private:
-	void do_find();
+	void doFind();
 
 private:
-	 Ui::DialogReferences *const ui;
+	Ui::DialogReferences ui;
+	QPushButton *buttonFind_ = nullptr;
 };
 
 }

@@ -16,24 +16,23 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef DIALOGINPUTVALUE_20061101_H_
-#define DIALOGINPUTVALUE_20061101_H_
+#ifndef DIALOG_INPUT_VALUE_H_20061101_
+#define DIALOG_INPUT_VALUE_H_20061101_
 
 #include "Types.h"
 
 #include <QDialog>
 
+#include "ui_DialogInputValue.h"
+
 class Register;
-
-
-namespace Ui { class DialogInputValue; }
 
 class DialogInputValue : public QDialog {
 	Q_OBJECT
 
 public:
-    explicit DialogInputValue(QWidget *parent = nullptr);
-    ~DialogInputValue() override;
+	explicit DialogInputValue(QWidget *parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
+	~DialogInputValue() override = default;
 
 public Q_SLOTS:
 	void on_hexInput_textEdited(const QString &);
@@ -42,12 +41,12 @@ public Q_SLOTS:
 
 public:
 	edb::reg_t value() const;
-	void set_value(Register &reg);
+	void setValue(Register &reg);
 
 private:
-	Ui::DialogInputValue *const ui;
-	edb::reg_t mask;
-	std::size_t valueLength;
+	Ui::DialogInputValue ui;
+	edb::reg_t mask_         = -1ll;
+	std::size_t valueLength_ = sizeof(std::uint64_t);
 };
 
 #endif

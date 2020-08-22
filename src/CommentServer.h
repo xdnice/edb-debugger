@@ -16,35 +16,29 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef COMMENTSERVER_20070427_H_
-#define COMMENTSERVER_20070427_H_
+#ifndef COMMENT_SERVER_H_20070427_
+#define COMMENT_SERVER_H_20070427_
 
-#include "QHexView"
 #include "Status.h"
+#include "Types.h"
 
+#include <QCoreApplication>
 #include <QHash>
-#include <QObject>
 #include <QString>
 
-class CommentServer : public QObject {
-	Q_OBJECT
-
+class CommentServer {
+	Q_DECLARE_TR_FUNCTIONS(CommentServer)
 public:
-    explicit CommentServer(QObject *parent = nullptr);
-	~CommentServer() override = default;
-
-public:
-	void set_comment(QHexView::address_t address, const QString &comment);
-	QString comment(QHexView::address_t address, int size) const;
+	void setComment(edb::address_t address, const QString &comment);
+	QString comment(edb::address_t address, int size) const;
 	void clear();
 
 private:
-	Result<QString> resolve_function_call(QHexView::address_t address) const;
-	Result<QString> resolve_string(QHexView::address_t address) const;
+	Result<QString, QString> resolveFunctionCall(edb::address_t address) const;
+	Result<QString, QString> resolveString(edb::address_t address) const;
 
 private:
-	QHash<quint64, QString> custom_comments_;
+	QHash<quint64, QString> customComments_;
 };
 
 #endif
-

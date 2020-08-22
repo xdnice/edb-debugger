@@ -20,85 +20,73 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "DebuggerCore.h"
 #include "IProcess.h"
 #include "PlatformCommon.h"
+#include "util/Container.h"
+
 #include <QDebug>
 
 #ifndef _GNU_SOURCE
-#define _GNU_SOURCE        /* or _BSD_SOURCE or _SVID_SOURCE */
+#define _GNU_SOURCE /* or _BSD_SOURCE or _SVID_SOURCE */
 #endif
-
-#include <sys/syscall.h>   /* For SYS_xxx definitions */
 
 namespace DebuggerCorePlugin {
 
-//------------------------------------------------------------------------------
-// Name: PlatformThread
-// Desc:
-//------------------------------------------------------------------------------
-PlatformThread::PlatformThread(DebuggerCore *core, std::shared_ptr<IProcess> &process, edb::tid_t tid) : core_(core), process_(process), tid_(tid) {
+/**
+ * @brief PlatformThread::PlatformThread
+ * @param core
+ * @param process
+ * @param tid
+ */
+PlatformThread::PlatformThread(DebuggerCore *core, std::shared_ptr<IProcess> &process, edb::tid_t tid)
+	: core_(core), process_(process), tid_(tid) {
 	assert(process);
 	assert(core);
 }
 
-//------------------------------------------------------------------------------
-// Name:
-// Desc:
-//------------------------------------------------------------------------------
+/**
+ * @brief PlatformThread::tid
+ * @return
+ */
 edb::tid_t PlatformThread::tid() const {
 	return tid_;
 }
 
-//------------------------------------------------------------------------------
-// Name:
-// Desc:
-//------------------------------------------------------------------------------
-QString PlatformThread::name() const  {
+/**
+ * @brief PlatformThread::name
+ * @return
+ */
+QString PlatformThread::name() const {
 	struct user_stat thread_stat;
 	int n = get_user_task_stat(process_->pid(), tid_, &thread_stat);
-	if(n >= 2) {
+	if (n >= 2) {
 		return thread_stat.comm;
 	}
 
 	return QString();
 }
 
-//------------------------------------------------------------------------------
-// Name:
-// Desc:
-//------------------------------------------------------------------------------
-int PlatformThread::priority() const  {
+/**
+ * @brief PlatformThread::priority
+ * @return
+ */
+int PlatformThread::priority() const {
 	struct user_stat thread_stat;
 	int n = get_user_task_stat(process_->pid(), tid_, &thread_stat);
-	if(n >= 18) {
+	if (n >= 18) {
 		return thread_stat.priority;
 	}
 
 	return 0;
 }
 
-//------------------------------------------------------------------------------
-// Name:
-// Desc:
-//------------------------------------------------------------------------------
-edb::address_t PlatformThread::instruction_pointer() const  {
-	// FIXME(ARM): doesn't work at least on ARM32
+/**
+ * @brief PlatformThread::runState
+ * @return
+ */
+QString PlatformThread::runState() const {
 	struct user_stat thread_stat;
 	int n = get_user_task_stat(process_->pid(), tid_, &thread_stat);
-	if(n >= 30) {
-		return thread_stat.kstkeip;
-	}
-
-	return 0;
-}
-
-//------------------------------------------------------------------------------
-// Name:
-// Desc:
-//------------------------------------------------------------------------------
-QString PlatformThread::runState() const  {
-	struct user_stat thread_stat;
-	int n = get_user_task_stat(process_->pid(), tid_, &thread_stat);
-	if(n >= 3) {
-		switch(thread_stat.state) {           // 03
+	if (n >= 3) {
+		switch (thread_stat.state) { // 03
 		case 'R':
 			return tr("%1 (Running)").arg(thread_stat.state);
 		case 'S':
@@ -128,48 +116,35 @@ QString PlatformThread::runState() const  {
 	return tr("Unknown");
 }
 
-//------------------------------------------------------------------------------
-// Name: resume
-// Desc: resumes this thread, passing the signal that stopped it
-//       (unless the signal was SIGSTOP)
-//------------------------------------------------------------------------------
+/**
+ * resumes this thread, passing the signal that stopped it
+ * (unless the signal was SIGSTOP)
+ *
+ * @brief PlatformThread::resume
+ * @return
+ */
 Status PlatformThread::resume() {
-	return core_->ptrace_continue(tid_, resume_code(status_));
+	return core_->ptraceContinue(tid_, resume_code(status_));
 }
 
-//------------------------------------------------------------------------------
-// Name: resume
-// Desc: resumes this thread , passing the signal that stopped it
-//       (unless the signal was SIGSTOP, or the passed status != DEBUG_EXCEPTION_NOT_HANDLED)
-//------------------------------------------------------------------------------
-Status PlatformThread::resume(edb::EVENT_STATUS status) {
+/**
+ * resumes this thread, passing the signal that stopped it
+ * (unless the signal was SIGSTOP, or the passed status != DEBUG_EXCEPTION_NOT_HANDLED)
+ * @brief PlatformThread::resume
+ * @param status
+ * @return
+ */
+Status PlatformThread::resume(edb::EventStatus status) {
 	const int code = (status == edb::DEBUG_EXCEPTION_NOT_HANDLED) ? resume_code(status_) : 0;
-	return core_->ptrace_continue(tid_, code);
+	return core_->ptraceContinue(tid_, code);
 }
 
-//------------------------------------------------------------------------------
-// Name: stop
-// Desc:
-//------------------------------------------------------------------------------
-Status PlatformThread::stop() {
-	if(syscall(SYS_tgkill, process_->pid(), tid_, SIGSTOP) == -1) {
-
-		const char *const error = strerror(errno);
-		qWarning() << "Unable to stop thread" << tid_ << ": tgkill failed:" << error;
-		return Status(error);
-	}
-
-	// TODO(eteran): should this just be this?
-	//::kill(tid_, SIGSTOP);
-	return Status::Ok;
-}
-
-//------------------------------------------------------------------------------
-// Name: isPaused
-// Desc: returns true if this thread is currently in the debugger's wait list
-//------------------------------------------------------------------------------
+/**
+ * @brief PlatformThread::isPaused
+ * @return true if this thread is currently in the debugger's wait list
+ */
 bool PlatformThread::isPaused() const {
-	return core_->waited_threads_.contains(tid_);
+	return util::contains(core_->waitedThreads_, tid_);
 }
 
 }

@@ -16,13 +16,13 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PLATFORMSTATE_20110330_H_
-#define PLATFORMSTATE_20110330_H_
+#ifndef PLATFORM_STATE_H_20110330_
+#define PLATFORM_STATE_H_20110330_
 
 #include "IState.h"
 #include "Types.h"
-#include <sys/user.h>
 #include <mach/mach.h>
+#include <sys/user.h>
 
 namespace DebuggerCore {
 
@@ -36,8 +36,8 @@ public:
 	std::unique_ptr<IState> clone() const override;
 
 public:
-	QString flags_to_string() const override;
-	QString flags_to_string(edb::reg_t flags) const override;
+	QString flagsToString() const override;
+	QString flagsToString(edb::reg_t flags) const override;
 	Register value(const QString &reg) const override;
 	edb::address_t frame_pointer() const override;
 	edb::address_t instruction_pointer() const override;
@@ -56,14 +56,14 @@ public:
 
 private:
 #if defined(EDB_X86)
-	x86_thread_state32_t    thread_state_;
-	x86_float_state32_t     float_state_;
-	x86_debug_state32_t     debug_state_;
+	x86_thread_state32_t thread_state_;
+	x86_float_state32_t float_state_;
+	x86_debug_state32_t debug_state_;
 	x86_exception_state32_t exception_state_;
 #elif defined(EDB_X86_64)
-	x86_thread_state64_t    thread_state_;
-	x86_float_state64_t     float_state_;
-	x86_debug_state64_t     debug_state_;
+	x86_thread_state64_t thread_state_;
+	x86_float_state64_t float_state_;
+	x86_debug_state64_t debug_state_;
 	x86_exception_state64_t exception_state_;
 #endif
 };
@@ -71,4 +71,3 @@ private:
 }
 
 #endif
-

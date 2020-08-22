@@ -16,8 +16,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef ELFBINARYINFO_20061122_H_
-#define ELFBINARYINFO_20061122_H_
+#ifndef BINARY_INFO_H_20061122_
+#define BINARY_INFO_H_20061122_
 
 #include "IPlugin.h"
 #include "ISymbolGenerator.h"
@@ -35,22 +35,22 @@ class BinaryInfo : public QObject, public IPlugin, public ISymbolGenerator {
 	Q_CLASSINFO("url", "http://www.codef00.com")
 
 public:
-	BinaryInfo(QObject *parent = nullptr);
+	explicit BinaryInfo(QObject *parent = nullptr);
 
 private:
-	void private_init() override;
-	QWidget* options_page() override;
+	void privateInit() override;
+	QWidget *optionsPage() override;
 
 public:
 	QMenu *menu(QWidget *parent = nullptr) override;
-	QString extra_arguments() const override;
-	ArgumentStatus parse_arguments(QStringList &args) override;
+	QString extraArguments() const override;
+	ArgumentStatus parseArguments(QStringList &args) override;
 
 public:
-	bool generate_symbol_file(const QString &filename, const QString &symbol_file) override;
+	bool generateSymbolFile(const QString &filename, const QString &symbol_file) override;
 
 public Q_SLOTS:
-	void explore_header();
+	void exploreHeader();
 
 private:
 	QMenu *menu_ = nullptr;

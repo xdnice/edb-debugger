@@ -16,15 +16,15 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef MODULE_H_
-#define MODULE_H_
+#ifndef MODULE_H_20191119_
+#define MODULE_H_20191119_
 
 #include "Types.h"
 #include <QString>
 
 struct Module {
-	QString        name;
-	edb::address_t base_address;
+	QString name;
+	edb::address_t baseAddress;
 };
 
 #endif

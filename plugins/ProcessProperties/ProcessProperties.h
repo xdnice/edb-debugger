@@ -15,8 +15,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef ROPTOOL_20100817_H_
-#define ROPTOOL_20100817_H_
+#ifndef PROCESS_PROPERTIES_H_20100817_
+#define PROCESS_PROPERTIES_H_20100817_
 
 #include "IPlugin.h"
 
@@ -33,14 +33,14 @@ class ProcessProperties : public QObject, public IPlugin {
 	Q_CLASSINFO("url", "http://www.codef00.com")
 
 public:
-	ProcessProperties(QObject *parent = nullptr);
+	explicit ProcessProperties(QObject *parent = nullptr);
 	~ProcessProperties() override;
 
 public:
 	QMenu *menu(QWidget *parent = nullptr) override;
 
 public Q_SLOTS:
-	void show_menu();
+	void showMenu();
 
 private:
 	QMenu *menu_              = nullptr;

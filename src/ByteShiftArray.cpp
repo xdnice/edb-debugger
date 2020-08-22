@@ -17,12 +17,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "ByteShiftArray.h"
+#include <climits>
 
 //------------------------------------------------------------------------------
 // Name: ByteShiftArray
 // Desc: constructor
 //------------------------------------------------------------------------------
-ByteShiftArray::ByteShiftArray(int size) : max_size_(size) {
+ByteShiftArray::ByteShiftArray(int size)
+	: maxSize_(size) {
 }
 
 //------------------------------------------------------------------------------
@@ -30,8 +32,9 @@ ByteShiftArray::ByteShiftArray(int size) : max_size_(size) {
 // Desc:
 //------------------------------------------------------------------------------
 void ByteShiftArray::swap(ByteShiftArray &other) {
-	std::swap(data_,     other.data_);
-	std::swap(max_size_, other.max_size_);
+	using std::swap;
+	swap(data_, other.data_);
+	swap(maxSize_, other.maxSize_);
 }
 
 //------------------------------------------------------------------------------
@@ -40,10 +43,8 @@ void ByteShiftArray::swap(ByteShiftArray &other) {
 //------------------------------------------------------------------------------
 ByteShiftArray &ByteShiftArray::shl() {
 
-	if(data_.size() == max_size_) {
-		for(int i = 1; i < data_.size(); ++i) {
-			data_[i - 1] = data_[i];
-		}
+	if (data_.size() == maxSize_) {
+		std::rotate(data_.begin(), data_.begin() + 1, data_.end());
 		data_.back() = 0;
 	} else {
 		data_.push_back(0);
@@ -56,8 +57,8 @@ ByteShiftArray &ByteShiftArray::shl() {
 // Desc: shifts data right one byte and shifts in a 0
 //------------------------------------------------------------------------------
 ByteShiftArray &ByteShiftArray::shr() {
-	if(data_.size() == max_size_) {
-		for(int i = 0; i < data_.size() - 1; ++i) {
+	if (data_.size() == maxSize_) {
+		for (int i = 0; i < data_.size() - 1; ++i) {
 			data_[i + 1] = data_[i];
 		}
 		data_.first() = 0;
@@ -79,7 +80,7 @@ int ByteShiftArray::size() const {
 // Name: operator[]
 // Desc: returns and l-value version of an element in the byte array
 //------------------------------------------------------------------------------
-quint8 &ByteShiftArray::operator[](std::size_t i) {
+uint8_t &ByteShiftArray::operator[](std::size_t i) {
 	Q_ASSERT(i < INT_MAX);
 	return data_[static_cast<int>(i)];
 }
@@ -88,7 +89,7 @@ quint8 &ByteShiftArray::operator[](std::size_t i) {
 // Name: operator[]
 // Desc: returns and r-value version of an element in the byte array
 //------------------------------------------------------------------------------
-quint8 ByteShiftArray::operator[](std::size_t i) const {
+uint8_t ByteShiftArray::operator[](std::size_t i) const {
 	Q_ASSERT(i < INT_MAX);
 	return data_[static_cast<int>(i)];
 }
@@ -97,7 +98,7 @@ quint8 ByteShiftArray::operator[](std::size_t i) const {
 // Name: data
 // Desc: returns a read only pointer to the data this byte array holds
 //------------------------------------------------------------------------------
-const quint8 *ByteShiftArray::data() const {
+const uint8_t *ByteShiftArray::data() const {
 	return &data_[0];
 }
 
@@ -113,7 +114,7 @@ void ByteShiftArray::clear() {
 // Name: operator<<
 // Desc:
 //------------------------------------------------------------------------------
-ByteShiftArray &ByteShiftArray::operator<<(quint8 x) {
+ByteShiftArray &ByteShiftArray::operator<<(uint8_t x) {
 	shl();
 	data_.back() = x;
 	return *this;

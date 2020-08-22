@@ -16,21 +16,20 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef DIALOGBREAKPOINTS_20061101_H_
-#define DIALOGBREAKPOINTS_20061101_H_
+#ifndef DIALOG_BREAKPOINTS_H_20061101_
+#define DIALOG_BREAKPOINTS_H_20061101_
 
+#include "ui_DialogBreakpoints.h"
 #include <QDialog>
 
 namespace BreakpointManagerPlugin {
-
-namespace Ui { class DialogBreakpoints; }
 
 class DialogBreakpoints : public QDialog {
 	Q_OBJECT
 
 public:
-    explicit DialogBreakpoints(QWidget *parent = nullptr);
-	~DialogBreakpoints() override;
+	explicit DialogBreakpoints(QWidget *parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
+	~DialogBreakpoints() override = default;
 
 public Q_SLOTS:
 	void updateList();
@@ -38,15 +37,15 @@ public Q_SLOTS:
 	void on_btnRemove_clicked();
 	void on_btnCondition_clicked();
 	void on_tableWidget_cellDoubleClicked(int row, int col);
-    void on_btnImport_clicked();
-    void on_btnExport_clicked();
+	void on_btnImport_clicked();
+	void on_btnExport_clicked();
 
 private:
 	void showEvent(QShowEvent *event) override;
 	void hideEvent(QHideEvent *event) override;
 
 private:
-	 Ui::DialogBreakpoints *const ui;
+	Ui::DialogBreakpoints ui;
 };
 
 }

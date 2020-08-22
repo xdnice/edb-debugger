@@ -15,8 +15,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef SESSIONERROR_20170929_H_
-#define SESSIONERROR_20170929_H_
+
+#ifndef SESSION_ERROR_H_20170929_
+#define SESSION_ERROR_H_20170929_
 
 #include <QString>
 
@@ -31,7 +32,7 @@ public:
 
 public:
 	ErrorCode err = NoError;
-	QString errorMessage;
+	QString message;
 };
 
 #endif

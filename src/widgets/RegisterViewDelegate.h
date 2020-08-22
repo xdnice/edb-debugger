@@ -16,27 +16,28 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef REGISTER_VIEW_DELEGATE_20070519_H_
-#define REGISTER_VIEW_DELEGATE_20070519_H_
+#ifndef REGISTER_VIEW_DELEGATE_H_20070519_
+#define REGISTER_VIEW_DELEGATE_H_20070519_
 
 #include <QStyledItemDelegate>
 
 class QTreeView;
 
-class RegisterViewDelegate: public QStyledItemDelegate {
+class RegisterViewDelegate : public QStyledItemDelegate {
 	Q_OBJECT
-	Q_DISABLE_COPY(RegisterViewDelegate)
-public:
-    RegisterViewDelegate(QTreeView *view, QWidget *parent);
-    ~RegisterViewDelegate() override = default;
 
 public:
-    void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
-    QSize sizeHint(const QStyleOptionViewItem &opt, const QModelIndex &index) const override;
+	RegisterViewDelegate(QTreeView *view, QWidget *parent);
+	RegisterViewDelegate(const RegisterViewDelegate &) = delete;
+	RegisterViewDelegate &operator=(const RegisterViewDelegate &) = delete;
+	~RegisterViewDelegate() override                              = default;
+
+public:
+	void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
+	QSize sizeHint(const QStyleOptionViewItem &opt, const QModelIndex &index) const override;
 
 private:
-    QTreeView *const view_;
+	QTreeView *view_;
 };
 
 #endif
-

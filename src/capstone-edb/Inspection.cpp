@@ -1,6 +1,6 @@
 
 #include "Instruction.h"
-#include "Util.h"
+#include "util/Container.h"
 
 namespace CapstoneEDB {
 
@@ -40,7 +40,7 @@ bool is_syscall(const Instruction &insn) {
 }
 
 bool is_interrupt(const Instruction &insn) {
-	if(!insn) return false;
+	if (!insn) return false;
 	const int op = insn.operation();
 	return op == X86_INS_INT || op == X86_INS_INT1 || op == X86_INS_INT3 || op == X86_INS_INTO;
 }
@@ -266,9 +266,11 @@ bool is_simd(const Instruction &insn) {
 		X86_GRP_NOVLX,
 	};
 
-	for (auto g = 0; g < insn->detail->groups_count; ++g)
-		if (util::contains(simdGroups, insn->detail->groups[g]))
+	for (auto g = 0; g < insn->detail->groups_count; ++g) {
+		if (util::contains(simdGroups, insn->detail->groups[g])) {
 			return true;
+		}
+	}
 
 	return false;
 }

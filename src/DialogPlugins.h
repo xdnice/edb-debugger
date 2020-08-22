@@ -16,31 +16,32 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef DIALOG_PLUGINS_20080926_H_
-#define DIALOG_PLUGINS_20080926_H_
+#ifndef DIALOG_PLUGINS_H_20080926_
+#define DIALOG_PLUGINS_H_20080926_
 
 #include <QDialog>
+
+#include "ui_DialogPlugins.h"
 
 class QSortFilterProxyModel;
 class PluginModel;
 
-namespace Ui { class DialogPlugins; }
-
 class DialogPlugins : public QDialog {
 	Q_OBJECT
-	Q_DISABLE_COPY(DialogPlugins)
-public:
-    explicit DialogPlugins(QWidget *parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
-    ~DialogPlugins() override;
 
 public:
-    void showEvent(QShowEvent *) override;
+	explicit DialogPlugins(QWidget *parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
+	DialogPlugins(const DialogPlugins &) = delete;
+	DialogPlugins &operator=(const DialogPlugins &) = delete;
+	~DialogPlugins() override                       = default;
+
+public:
+	void showEvent(QShowEvent *) override;
 
 private:
-	Ui::DialogPlugins *const ui;
-	PluginModel           *plugin_model_;
-	QSortFilterProxyModel *plugin_filter_;
+	Ui::DialogPlugins ui;
+	PluginModel *pluginModel_            = nullptr;
+	QSortFilterProxyModel *pluginFilter_ = nullptr;
 };
 
 #endif
-

@@ -16,8 +16,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef STRINGSEARCHER_20060430_H_
-#define STRINGSEARCHER_20060430_H_
+#ifndef BINARY_SEARCHER_H_20060430_
+#define BINARY_SEARCHER_H_20060430_
 
 #include "IPlugin.h"
 
@@ -34,16 +34,16 @@ class BinarySearcher : public QObject, public IPlugin {
 	Q_CLASSINFO("url", "http://www.codef00.com")
 
 public:
-	BinarySearcher(QObject *parent = nullptr);
+	explicit BinarySearcher(QObject *parent = nullptr);
 	~BinarySearcher() override = default;
 
 public:
 	QMenu *menu(QWidget *parent = nullptr) override;
-	QList<QAction *> stack_context_menu() override;
+	QList<QAction *> stackContextMenu() override;
 
 public Q_SLOTS:
-	void show_menu();
-	void mnuStackFindASCII();
+	void showMenu();
+	void mnuStackFindAscii();
 
 private:
 	QMenu *menu_ = nullptr;

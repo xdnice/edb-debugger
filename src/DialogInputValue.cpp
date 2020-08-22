@@ -22,33 +22,24 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "Register.h"
 #include "edb.h"
 
-#include <QRegExpValidator>
 #include <QDebug>
+#include <QRegExpValidator>
 
 #include <limits>
-
-#include "ui_DialogInputValue.h"
 
 //------------------------------------------------------------------------------
 // Name: DialogInputValue
 // Desc:
 //------------------------------------------------------------------------------
-DialogInputValue::DialogInputValue(QWidget *parent) : QDialog(parent), ui(new Ui::DialogInputValue), mask(-1ll), valueLength(sizeof(std::uint64_t)) {
-	ui->setupUi(this);
+DialogInputValue::DialogInputValue(QWidget *parent, Qt::WindowFlags f)
+	: QDialog(parent, f) {
+
+	ui.setupUi(this);
 
 	// Apply some defaults
-	const auto regex = QString("[A-Fa-f0-9]{0,%1}").arg(16);
-	ui->hexInput->setValidator(new QRegExpValidator(QRegExp(regex), this));
-	ui->signedInput->setValidator(new QLongValidator(std::numeric_limits<long long>::min(), std::numeric_limits<long long>::max(), this));
-	ui->unsignedInput->setValidator(new QULongValidator(0, std::numeric_limits<unsigned long long>::max(), this));
-}
-
-//------------------------------------------------------------------------------
-// Name: ~DialogInputValue
-// Desc:
-//------------------------------------------------------------------------------
-DialogInputValue::~DialogInputValue() {
-	delete ui;
+	ui.hexInput->setValidator(new QRegExpValidator(QRegExp("[A-Fa-f0-9]{0,16}"), this));
+	ui.signedInput->setValidator(new QLongValidator(std::numeric_limits<long long>::min(), std::numeric_limits<long long>::max(), this));
+	ui.unsignedInput->setValidator(new QULongValidator(0, std::numeric_limits<unsigned long long>::max(), this));
 }
 
 //------------------------------------------------------------------------------
@@ -57,32 +48,33 @@ DialogInputValue::~DialogInputValue() {
 //------------------------------------------------------------------------------
 edb::reg_t DialogInputValue::value() const {
 	bool ok;
-	return mask & edb::reg_t::fromHexString(ui->hexInput->text(),&ok);
+	return mask_ & edb::reg_t::fromHexString(ui.hexInput->text(), &ok);
 }
 
 //------------------------------------------------------------------------------
-// Name: set_value
+// Name: setValue
 // Desc:
 //------------------------------------------------------------------------------
-void DialogInputValue::set_value(Register &reg) {
-	if(reg.bitSize()>sizeof(edb::reg_t)*8) {
-		qWarning() << "Warning: DialogInputValue::set_value(tooLargeRegister): such large registers are not supported yet";
+void DialogInputValue::setValue(Register &reg) {
+	if (reg.bitSize() > sizeof(edb::reg_t) * 8) {
+		qWarning() << "Warning: DialogInputValue::setValue(tooLargeRegister): such large registers are not supported yet";
 		return;
 	}
-	ui->hexInput->setText(reg.toHexString());
-	ui->signedInput->setText(QString("%1").arg(reg.valueAsSignedInteger()));
-	ui->unsignedInput->setText(QString("%1").arg(reg.valueAsInteger()));
 
-	const auto regex = QString("[A-Fa-f0-9]{0,%1}").arg(reg.bitSize()/4);
-	const std::uint64_t unsignedMax=(reg.bitSize()==64 ? -1 : (1ull<<(reg.bitSize()))-1); // Avoid UB
-	const std::int64_t signedMin=1ull<<(reg.bitSize()-1);
-	const std::int64_t signedMax=unsignedMax>>1;
-	mask=unsignedMax;
-	valueLength=reg.bitSize()/8;
+	ui.hexInput->setText(reg.toHexString());
+	ui.signedInput->setText(QString("%1").arg(reg.valueAsSignedInteger()));
+	ui.unsignedInput->setText(QString("%1").arg(reg.valueAsInteger()));
 
-	ui->hexInput->setValidator(new QRegExpValidator(QRegExp(regex), this));
-	ui->signedInput->setValidator(new QLongValidator(signedMin, signedMax, this));
-	ui->unsignedInput->setValidator(new QULongValidator(0, unsignedMax, this));
+	const auto regex                = QString("[A-Fa-f0-9]{0,%1}").arg(reg.bitSize() / 4);
+	const std::uint64_t unsignedMax = (reg.bitSize() == 64 ? -1 : (1ull << (reg.bitSize())) - 1); // Avoid UB
+	const std::int64_t signedMin    = 1ull << (reg.bitSize() - 1);
+	const std::int64_t signedMax    = unsignedMax >> 1;
+	mask_                           = unsignedMax;
+	valueLength_                    = reg.bitSize() / 8;
+
+	ui.hexInput->setValidator(new QRegExpValidator(QRegExp(regex), this));
+	ui.signedInput->setValidator(new QLongValidator(signedMin, signedMax, this));
+	ui.unsignedInput->setValidator(new QULongValidator(0, unsignedMax, this));
 }
 
 //------------------------------------------------------------------------------
@@ -91,15 +83,14 @@ void DialogInputValue::set_value(Register &reg) {
 //------------------------------------------------------------------------------
 void DialogInputValue::on_hexInput_textEdited(const QString &s) {
 	bool ok;
-	auto value = edb::reg_t::fromHexString(s,&ok);
+	auto value = edb::reg_t::fromHexString(s, &ok);
 
-	if(!ok) {
+	if (!ok) {
 		value = 0;
 	}
 
-	ui->signedInput->setText(value.signExtended(valueLength).signedToString());
-	ui->unsignedInput->setText(value.unsignedToString());
-
+	ui.signedInput->setText(value.signExtended(valueLength_).signedToString());
+	ui.unsignedInput->setText(value.unsignedToString());
 }
 
 //------------------------------------------------------------------------------
@@ -108,14 +99,14 @@ void DialogInputValue::on_hexInput_textEdited(const QString &s) {
 //------------------------------------------------------------------------------
 void DialogInputValue::on_signedInput_textEdited(const QString &s) {
 	bool ok;
-	auto value = edb::reg_t::fromSignedString(s,&ok);
+	auto value = edb::reg_t::fromSignedString(s, &ok);
 
-	if(!ok) {
+	if (!ok) {
 		value = 0;
 	}
 
-	ui->hexInput->setText(value.toHexString());
-	ui->unsignedInput->setText(value.unsignedToString());
+	ui.hexInput->setText(value.toHexString());
+	ui.unsignedInput->setText(value.unsignedToString());
 }
 
 //------------------------------------------------------------------------------
@@ -124,12 +115,12 @@ void DialogInputValue::on_signedInput_textEdited(const QString &s) {
 //------------------------------------------------------------------------------
 void DialogInputValue::on_unsignedInput_textEdited(const QString &s) {
 	bool ok;
-	auto value = edb::reg_t::fromString(s,&ok);
+	auto value = edb::reg_t::fromString(s, &ok);
 
-	if(!ok) {
+	if (!ok) {
 		value = 0;
 	}
 
-	ui->hexInput->setText(value.toHexString());
-	ui->signedInput->setText(value.signedToString());
+	ui.hexInput->setText(value.toHexString());
+	ui.signedInput->setText(value.signedToString());
 }

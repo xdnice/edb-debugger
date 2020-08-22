@@ -15,8 +15,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef ODBG_REGISTER_VIEW_PLUGIN_H_20151230
-#define ODBG_REGISTER_VIEW_PLUGIN_H_20151230
+#ifndef ODBG_REGISTER_VIEW_PLUGIN_H_20151230_
+#define ODBG_REGISTER_VIEW_PLUGIN_H_20151230_
 
 #include "IPlugin.h"
 #include <vector>
@@ -33,28 +33,28 @@ class Plugin : public QObject, public IPlugin {
 	Q_CLASSINFO("email", "b7.10110111@gmail.com")
 
 public:
-	Plugin(QObject *parent = nullptr);
+	explicit Plugin(QObject *parent = nullptr);
 	QMenu *menu(QWidget *parent = nullptr) override;
-	QList<QAction *> cpu_context_menu() override;
 
 private:
 	void setupDocks();
 	void createRegisterView(const QString &settingsGroup);
 	void renumerateDocks() const;
-
-private Q_SLOTS:
-	void createRegisterView();
-	void saveState() const;
+	void removeDock(QWidget *);
+	void saveSettings() const;
 	void expandRSUp(bool checked) const;
 	void expandRSDown(bool checked) const;
 	void expandLSUp(bool checked) const;
 	void expandLSDown(bool checked) const;
-	void removeDock(QWidget *);
+	QString dockName() const;
+
+private Q_SLOTS:
+	void createRegisterView();
 
 private:
-	QMenu *                   menu_;
+	QMenu *menu_ = nullptr;
 	std::vector<ODBRegView *> registerViews_;
-	std::vector<QAction *>    menuDeleteRegViewActions_;
+	std::vector<QAction *> menuDeleteRegViewActions_;
 };
 
 }

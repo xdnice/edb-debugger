@@ -26,14 +26,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace {
 
-constexpr int LineThickness  = 2;
-constexpr int EdgeZValue     = 1;
+constexpr int LineThickness = 2;
+constexpr int EdgeZValue    = 1;
 
 //------------------------------------------------------------------------------
-// Name: createArrow
+// Name: create_arrow
 // Desc:
 //------------------------------------------------------------------------------
-QPolygonF createArrow(QLineF line, int size) {
+QPolygonF create_arrow(QLineF line, int size) {
 	// we want a short line at the END of this line
 	line = QLineF(line.p2(), line.p1());
 	line.setLength(size);
@@ -55,7 +55,8 @@ QPolygonF createArrow(QLineF line, int size) {
 // Name: GraphEdge
 // Desc:
 //------------------------------------------------------------------------------
-GraphEdge::GraphEdge(GraphNode *from, GraphNode *to, const QColor &color, QGraphicsItem *parent) : QGraphicsItemGroup(parent), from_(from), to_(to), graph_(from->graph_), color_(color) {
+GraphEdge::GraphEdge(GraphNode *from, GraphNode *to, const QColor &color, QGraphicsItem *parent)
+	: QGraphicsItemGroup(parent), from_(from), to_(to), graph_(from->graph_), color_(color) {
 
 	setFlag(QGraphicsItem::ItemHasNoContents, true);
 
@@ -118,16 +119,19 @@ QLineF GraphEdge::shortenLineToNode(QLineF line) {
 
 	// get the 4 lines tha tmake up the rect
 	const QLineF polyLines[4] = {
-		QLineF(nodeRect.topLeft(),     nodeRect.bottomLeft()),
-		QLineF(nodeRect.topLeft(),     nodeRect.topRight()),
-		QLineF(nodeRect.topRight(),    nodeRect.bottomRight()),
-		QLineF(nodeRect.bottomRight(), nodeRect.bottomLeft())
-	};
+		QLineF(nodeRect.topLeft(), nodeRect.bottomLeft()),
+		QLineF(nodeRect.topLeft(), nodeRect.topRight()),
+		QLineF(nodeRect.topRight(), nodeRect.bottomRight()),
+		QLineF(nodeRect.bottomRight(), nodeRect.bottomLeft())};
 
 	// for any that intersect, shorten the line appropriately
-	for(int i = 0; i < 4; ++i) {
+	for (int i = 0; i < 4; ++i) {
 		QPointF intersectPoint;
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+		QLineF::IntersectType intersectType = polyLines[i].intersects(line, &intersectPoint);
+#else
 		QLineF::IntersectType intersectType = polyLines[i].intersect(line, &intersectPoint);
+#endif
 		if (intersectType == QLineF::BoundedIntersection) {
 			line.setP2(intersectPoint);
 		}
@@ -167,7 +171,7 @@ void GraphEdge::createLine() {
 	const QPointF p2 = to_->sceneBoundingRect().center();
 	const QPen pen(lineColor(), lineThickness(), Qt::SolidLine, Qt::RoundCap);
 	const QLineF line = shortenLineToNode(QLineF(p1, p2));
-	auto segment = createLineSegment(line, pen);
+	auto segment      = createLineSegment(line, pen);
 	addToGroup(segment);
 	addArrowHead(line);
 }
@@ -188,8 +192,8 @@ QGraphicsPolygonItem *GraphEdge::addArrowHead(const QLineF &line, int lineThickn
 
 	const int arrowHeadSize = std::max(lineThickness * 5, 20);
 
-	QPolygonF arrow = createArrow(line, arrowHeadSize);
-	auto arrowHead = new QGraphicsPolygonItem(this);
+	QPolygonF arrow = create_arrow(line, arrowHeadSize);
+	auto arrowHead  = new QGraphicsPolygonItem(this);
 	arrowHead->setPolygon(arrow);
 	arrowHead->setPen(QPen(color));
 	arrowHead->setBrush(QBrush(color));
@@ -212,7 +216,7 @@ QGraphicsPolygonItem *GraphEdge::addArrowHead(const QLineF &line) {
 //------------------------------------------------------------------------------
 void GraphEdge::updateLines() {
 
-	if(!childItems().empty()) {
+	if (!childItems().empty()) {
 		createLine();
 	}
 }

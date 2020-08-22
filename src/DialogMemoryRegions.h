@@ -16,51 +16,51 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef DIALOGMEMORYREGIONS_20061101_H_
-#define DIALOGMEMORYREGIONS_20061101_H_
+#ifndef DIALOG_MEMORY_REGIONS_H_20061101_
+#define DIALOG_MEMORY_REGIONS_H_20061101_
 
 #include <QDialog>
 
 #include <memory>
+
+#include "ui_DialogMemoryRegions.h"
 
 class IRegion;
 
 class QSortFilterProxyModel;
 class QModelIndex;
 
-namespace Ui { class DialogMemoryRegions; }
-
 class DialogMemoryRegions : public QDialog {
 	Q_OBJECT
 public:
-    explicit DialogMemoryRegions(QWidget *parent = nullptr);
-    ~DialogMemoryRegions() override;
+	explicit DialogMemoryRegions(QWidget *parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
+	~DialogMemoryRegions() override = default;
 
 private:
-    void showEvent(QShowEvent *event) override;
+	void showEvent(QShowEvent *event) override;
 
 private Q_SLOTS:
 	void on_regions_table_customContextMenuRequested(const QPoint &pos);
 	void on_regions_table_doubleClicked(const QModelIndex &index);
-	void set_access_none();
-	void set_access_r();
-	void set_access_w();
-	void set_access_x();
-	void set_access_rw();
-	void set_access_rx();
-	void set_access_wx();
-	void set_access_rwx();
-	void view_in_cpu();
-	void view_in_stack();
-	void view_in_dump();
+	void setAccessNone();
+	void setAccessR();
+	void setAccessW();
+	void setAccessX();
+	void setAccessRW();
+	void setAccessRX();
+	void setAccessWX();
+	void setAccessRWX();
+	void viewInCpu();
+	void viewInStack();
+	void viewInDump();
 
 private:
-	std::shared_ptr<IRegion> selected_region() const;
-	void set_permissions(bool read, bool write, bool execute);
+	std::shared_ptr<IRegion> selectedRegion() const;
+	void setPermissions(bool read, bool write, bool execute);
 
 private:
-	Ui::DialogMemoryRegions *const ui;
-	QSortFilterProxyModel *        filter_model_;
+	Ui::DialogMemoryRegions ui;
+	QSortFilterProxyModel *filterModel_ = nullptr;
 };
 
 #endif

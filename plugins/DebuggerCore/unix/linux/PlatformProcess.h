@@ -16,8 +16,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PLATOFORM_PROCESS_20150517_H_
-#define PLATOFORM_PROCESS_20150517_H_
+#ifndef PLATFORM_PROCESS_H_20150517_
+#define PLATFORM_PROCESS_H_20150517_
 
 #include "IProcess.h"
 #include "Status.h"
@@ -29,59 +29,68 @@ namespace DebuggerCorePlugin {
 
 class DebuggerCore;
 
-class PlatformProcess : public IProcess {
+class PlatformProcess final : public IProcess {
 	Q_DECLARE_TR_FUNCTIONS(PlatformProcess)
 	friend class PlatformThread;
 
 public:
 	PlatformProcess(DebuggerCore *core, edb::pid_t pid);
-	~PlatformProcess() override                         = default;
-	PlatformProcess(const PlatformProcess &)            = delete;
-	PlatformProcess& operator=(const PlatformProcess &) = delete;
+	~PlatformProcess() override              = default;
+	PlatformProcess(const PlatformProcess &) = delete;
+	PlatformProcess &operator=(const PlatformProcess &) = delete;
 
 public:
-	QDateTime                       start_time() const override;
-	QList<QByteArray>               arguments() const override;
-	QString                         current_working_directory() const override;
-	QString                         executable() const override;
-	edb::pid_t                      pid() const override;
-	std::shared_ptr<IProcess>       parent() const override;
-	edb::address_t                  code_address() const override;
-	edb::address_t                  data_address() const override;
+	QDateTime startTime() const override;
+	QList<QByteArray> arguments() const override;
+	QString currentWorkingDirectory() const override;
+	QString executable() const override;
+	QString stardardInput() const override;
+	QString stardardOutput() const override;
+	edb::pid_t pid() const override;
+	std::shared_ptr<IProcess> parent() const override;
+	edb::address_t codeAddress() const override;
+	edb::address_t dataAddress() const override;
+	edb::address_t entryPoint() const override;
 	QList<std::shared_ptr<IRegion>> regions() const override;
 	QList<std::shared_ptr<IThread>> threads() const override;
-	std::shared_ptr<IThread>        current_thread() const override;
-	void                            set_current_thread(IThread& thread) override;
-	edb::uid_t                      uid() const override;
-	QString                         user() const override;
-	QString                         name() const override;
-	QList<Module>                   loaded_modules() const override;
+	std::shared_ptr<IThread> currentThread() const override;
+	void setCurrentThread(IThread &thread) override;
+	edb::uid_t uid() const override;
+	QString user() const override;
+	QString name() const override;
+	QList<Module> loadedModules() const override;
+
+public:
+	edb::address_t debugPointer() const override;
+	edb::address_t calculateMain() const override;
 
 public:
 	Status pause() override;
-	Status resume(edb::EVENT_STATUS status) override;
-	Status step(edb::EVENT_STATUS status) override;
+	Status resume(edb::EventStatus status) override;
+	Status step(edb::EventStatus status) override;
 	bool isPaused() const override;
 
 public:
-	std::size_t write_bytes(edb::address_t address, const void *buf, size_t len) override;
-	std::size_t patch_bytes(edb::address_t address, const void *buf, size_t len) override;
-	std::size_t read_bytes(edb::address_t address, void *buf, size_t len) const override;
-	std::size_t read_pages(edb::address_t address, void *buf, size_t count) const override;
+	std::size_t writeBytes(edb::address_t address, const void *buf, size_t len) override;
+	std::size_t patchBytes(edb::address_t address, const void *buf, size_t len) override;
+	std::size_t readBytes(edb::address_t address, void *buf, size_t len) const override;
+	std::size_t readPages(edb::address_t address, void *buf, size_t count) const override;
 	QMap<edb::address_t, Patch> patches() const override;
 
 private:
-	bool ptrace_poke(edb::address_t address, long value);
-	long ptrace_peek(edb::address_t address, bool *ok) const;
-	quint8 read_byte_via_ptrace(edb::address_t address, bool *ok) const;
-	void write_byte_via_ptrace(edb::address_t address, quint8 value, bool *ok);
+	bool ptracePoke(edb::address_t address, long value);
+	long ptracePeek(edb::address_t address, bool *ok) const;
+	uint8_t ptraceReadByte(edb::address_t address, bool *ok) const;
+	void ptraceWriteByte(edb::address_t address, uint8_t value, bool *ok);
 
 private:
-	DebuggerCore*               core_;
-	edb::pid_t                  pid_;
-	std::shared_ptr<QFile>      ro_mem_file_;
-	std::shared_ptr<QFile>      rw_mem_file_;
+	DebuggerCore *core_ = nullptr;
+	edb::pid_t pid_;
+	std::shared_ptr<QFile> readOnlyMemFile_;
+	std::shared_ptr<QFile> readWriteMemFile_;
 	QMap<edb::address_t, Patch> patches_;
+	QString input_;
+	QString output_;
 };
 
 }

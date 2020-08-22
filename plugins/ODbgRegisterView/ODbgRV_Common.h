@@ -15,19 +15,18 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef ODBG_REGISTER_VIEW_COMMON_H_20170817
-#define ODBG_REGISTER_VIEW_COMMON_H_20170817
+#ifndef ODBG_REGISTER_VIEW_COMMON_H_20170817_
+#define ODBG_REGISTER_VIEW_COMMON_H_20170817_
 
 #include <QKeySequence>
 
 namespace ODbgRegisterView {
 
-const QKeySequence copyFieldShortcut(Qt::CTRL | Qt::Key_C);
-constexpr Qt::Key      setToZeroKey = Qt::Key_Z;
-constexpr Qt::Key      decrementKey = Qt::Key_Minus;
-constexpr Qt::Key      incrementKey = Qt::Key_Plus;
+constexpr Qt::Key SetToZeroKey = Qt::Key_Z;
+constexpr Qt::Key DecrementKey = Qt::Key_Minus;
+constexpr Qt::Key IncrementKey = Qt::Key_Plus;
 
-static constexpr auto GPRCategoryName = "General Purpose";
+static constexpr const char *GprCategoryName = "General Purpose";
 
 }
 

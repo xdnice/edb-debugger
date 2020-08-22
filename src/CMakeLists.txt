@@ -1,28 +1,28 @@
 cmake_minimum_required (VERSION 3.0)
 include("GNUInstallDirs")
+include("DetectGitBranch")
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTORCC ON)
 
 find_package(Qt5 5.0.0 REQUIRED Widgets Xml XmlPatterns Svg)
 
-if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
-	execute_process(
-		COMMAND git rev-parse HEAD
-		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-		OUTPUT_VARIABLE GIT_BRANCH
-		OUTPUT_STRIP_TRAILING_WHITESPACE
-	)
-else()
-	set(GIT_BRANCH "Unknown")
-endif()
+git_get_branch(GIT_BRANCH)
 
-add_definitions(-DGIT_BRANCH=${GIT_BRANCH})
-add_definitions(-DDEFAULT_PLUGIN_PATH=\"${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/edb\")
+qt5_add_resources(QRC_SOURCES 
+	debugger.qrc
+	breeze-edb.qrc
+	breeze-dark-edb.qrc
+)
+
+foreach(FILE IN LISTS QRC_SOURCES)
+	set_property(SOURCE ${FILE} PROPERTY SKIP_UNITY_BUILD_INCLUSION ON)
+endforeach()
 
 set(edb_SRCS
+	${QRC_SOURCES}
+	
 	BasicBlock.cpp
 	BinaryString.cpp
 	BinaryString.ui
@@ -73,6 +73,7 @@ set(edb_SRCS
 	FixedFontSelector.h
 	FixedFontSelector.ui
 	FloatX.cpp
+	Font.cpp
 	Function.cpp
 	HexStringValidator.cpp
 	MemoryRegions.cpp
@@ -92,25 +93,21 @@ set(edb_SRCS
 	SymbolManager.cpp
 	SymbolManager.h
 	ThreadsModel.cpp
-	debugger.qrc
-	edb.cpp
-	main.cpp
-
 	capstone-edb/Inspection.cpp
 	capstone-edb/Instruction.cpp
 	capstone-edb/include/Formatter.h
 	capstone-edb/include/Inspection.h
 	capstone-edb/include/Instruction.h
 	capstone-edb/include/Operand.h
+	edb.cpp
+	main.cpp
+	qhexview/QHexView
 	qhexview/qhexview.cpp
 	qhexview/qhexview.h
-	qhexview/QHexView
 	session/SessionError.cpp
 	session/SessionError.h
 	session/SessionManager.cpp
 	session/SessionManager.h
-	widgets/LineEdit.cpp
-	widgets/LineEdit.h
 	widgets/NavigationHistory.cpp
 	widgets/NavigationHistory.h
 	widgets/QDisassemblyView.cpp
@@ -121,14 +118,13 @@ set(edb_SRCS
 	widgets/SyntaxHighlighter.h
 	widgets/TabWidget.cpp
 	widgets/TabWidget.h
-	
+
 	${PROJECT_SOURCE_DIR}/include/API.h
 	${PROJECT_SOURCE_DIR}/include/ArchProcessor.h
 	${PROJECT_SOURCE_DIR}/include/BasicBlock.h
 	${PROJECT_SOURCE_DIR}/include/BinaryString.h
 	${PROJECT_SOURCE_DIR}/include/ByteShiftArray.h
 	${PROJECT_SOURCE_DIR}/include/Configuration.h
-	${PROJECT_SOURCE_DIR}/include/edb.h
 	${PROJECT_SOURCE_DIR}/include/Expression.h
 	${PROJECT_SOURCE_DIR}/include/FloatX.h
 	${PROJECT_SOURCE_DIR}/include/Function.h
@@ -139,7 +135,6 @@ set(edb_SRCS
 	${PROJECT_SOURCE_DIR}/include/IDebugEvent.h
 	${PROJECT_SOURCE_DIR}/include/IDebugEventHandler.h
 	${PROJECT_SOURCE_DIR}/include/IDebugger.h
-	${PROJECT_SOURCE_DIR}/include/Instruction.h
 	${PROJECT_SOURCE_DIR}/include/IPlugin.h
 	${PROJECT_SOURCE_DIR}/include/IProcess.h
 	${PROJECT_SOURCE_DIR}/include/IRegion.h
@@ -147,56 +142,55 @@ set(edb_SRCS
 	${PROJECT_SOURCE_DIR}/include/ISymbolGenerator.h
 	${PROJECT_SOURCE_DIR}/include/ISymbolManager.h
 	${PROJECT_SOURCE_DIR}/include/IThread.h
+	${PROJECT_SOURCE_DIR}/include/Instruction.h
 	${PROJECT_SOURCE_DIR}/include/MemoryRegions.h
 	${PROJECT_SOURCE_DIR}/include/Module.h
 	${PROJECT_SOURCE_DIR}/include/Patch.h
 	${PROJECT_SOURCE_DIR}/include/Prototype.h
-	${PROJECT_SOURCE_DIR}/include/QtHelper.h
 	${PROJECT_SOURCE_DIR}/include/QLongValidator.h
 	${PROJECT_SOURCE_DIR}/include/QULongValidator.h
+	${PROJECT_SOURCE_DIR}/include/QtHelper.h
 	${PROJECT_SOURCE_DIR}/include/Register.h
 	${PROJECT_SOURCE_DIR}/include/RegisterRef.h
 	${PROJECT_SOURCE_DIR}/include/RegisterViewModelBase.h
-	${PROJECT_SOURCE_DIR}/include/ShiftBuffer.h
 	${PROJECT_SOURCE_DIR}/include/State.h
 	${PROJECT_SOURCE_DIR}/include/Status.h
-	${PROJECT_SOURCE_DIR}/include/string_hash.h
 	${PROJECT_SOURCE_DIR}/include/Symbol.h
 	${PROJECT_SOURCE_DIR}/include/ThreadsModel.h
 	${PROJECT_SOURCE_DIR}/include/Types.h
-	${PROJECT_SOURCE_DIR}/include/Value.h
-	${PROJECT_SOURCE_DIR}/include/Address.h
 	${PROJECT_SOURCE_DIR}/include/Util.h
+	${PROJECT_SOURCE_DIR}/include/Value.h
+	${PROJECT_SOURCE_DIR}/include/edb.h
+	${PROJECT_SOURCE_DIR}/include/string_hash.h
+	${PROJECT_SOURCE_DIR}/include/util/Container.h
+	${PROJECT_SOURCE_DIR}/include/util/Float.h
+	${PROJECT_SOURCE_DIR}/include/util/Font.h
+	${PROJECT_SOURCE_DIR}/include/util/Integer.h
+	${PROJECT_SOURCE_DIR}/include/util/Math.h
+	${PROJECT_SOURCE_DIR}/include/util/String.h
+	${PROJECT_SOURCE_DIR}/include/util/Error.h
 	${PROJECT_SOURCE_DIR}/include/version.h
 )
 
-if((${CMAKE_SYSTEM_PROCESSOR} MATCHES "i[3456]86") OR (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64") OR (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "AMD64"))
+if(TARGET_ARCH_FAMILY_X86)
 	set(edb_SRCS
 		${edb_SRCS}
 		arch/x86-generic/ArchProcessor.cpp
 		arch/x86-generic/RegisterViewModel.cpp
+		arch/x86-generic/RegisterViewModel.h
 		${PROJECT_SOURCE_DIR}/include/arch/x86-generic/ArchTypes.h
-
 	)
-endif()
-
-if((${CMAKE_SYSTEM_PROCESSOR} MATCHES "armv[0-9]+"))
+elseif(TARGET_ARCH_FAMILY_ARM)
 	set(edb_SRCS
 		${edb_SRCS}
 		arch/arm-generic/ArchProcessor.cpp
 		arch/arm-generic/RegisterViewModel.cpp
+		arch/arm-generic/RegisterViewModel.h
 		${PROJECT_SOURCE_DIR}/include/arch/arm-generic/ArchTypes.h
 	)
 endif()
 
-if(UNIX)
-	set(edb_SRCS
-		${edb_SRCS}
-		${PROJECT_SOURCE_DIR}/include/os/unix/OSTypes.h
-	)
-endif()
-
-if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+if(TARGET_PLATFORM_WINDOWS)
 	enable_language(ASM_MASM)
 	set(CMAKE_ASM_MASM_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /safeseh")
 
@@ -205,16 +199,15 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
 		LongDoubleX86.asm
 		${PROJECT_SOURCE_DIR}/include/os/win32/OSTypes.h
 	)
-endif()
-
-if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+elseif(TARGET_PLATFORM_LINUX)
     set(edb_SRCS
         ${edb_SRCS}
+		${PROJECT_SOURCE_DIR}/include/os/unix/OSTypes.h
         ${PROJECT_SOURCE_DIR}/include/os/unix/linux/linker.h
     )
 endif()
 
-if(${GRAPHVIZ_FOUND})
+if(GRAPHVIZ_FOUND)
 	set(edb_SRCS
 		${edb_SRCS}
 		graph/GraphEdge.cpp
@@ -222,6 +215,8 @@ if(${GRAPHVIZ_FOUND})
 		graph/GraphicsScene.h
 		graph/GraphNode.cpp
 		graph/GraphWidget.cpp
+		graph/GraphvizHelper.cpp
+		graph/GraphvizHelper.h
 		${PROJECT_SOURCE_DIR}/include/GraphWidget.h
 		${PROJECT_SOURCE_DIR}/include/GraphEdge.h
 		${PROJECT_SOURCE_DIR}/include/GraphNode.h
@@ -230,11 +225,21 @@ endif()
 
 add_executable(edb ${edb_SRCS})
 
-set_property(TARGET edb PROPERTY CXX_EXTENSIONS OFF)
-set_property(TARGET edb PROPERTY CXX_STANDARD 14)
-set_target_properties(edb PROPERTIES ENABLE_EXPORTS 1)
+target_compile_definitions(edb PRIVATE
+	-DGIT_BRANCH=${GIT_BRANCH}
+	-DDEFAULT_PLUGIN_PATH=\"${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/edb\"
+)
 
-target_link_libraries(edb ${CAPSTONE_LIBRARIES} Qt5::Widgets Qt5::Xml Qt5::XmlPatterns Qt5::Svg ${GRAPHVIZ_LIBRARIES} ${DOUBLE_CONVERSION_LIBRARIES} ${GDTOA_LIBRARIES})
+target_link_libraries(edb 
+	${CAPSTONE_LIBRARIES} 
+	Qt5::Widgets 
+	Qt5::Xml 
+	Qt5::XmlPatterns 
+	Qt5::Svg 
+	${GRAPHVIZ_LIBRARIES} 
+	${DOUBLE_CONVERSION_LIBRARIES} 
+	${GDTOA_LIBRARIES}
+)
 
 target_include_directories (edb PRIVATE
 	"capstone-edb"
@@ -243,6 +248,11 @@ target_include_directories (edb PRIVATE
 	"session"
 )
 
-set_target_properties(edb PROPERTIES ENABLE_EXPORTS TRUE)
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})
 install (TARGETS edb DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+set_property(TARGET edb PROPERTY CXX_EXTENSIONS OFF)
+set_property(TARGET edb PROPERTY CXX_STANDARD 14)
+set_property(TARGET edb PROPERTY ENABLE_EXPORTS TRUE)
+set_property(TARGET edb PROPERTY RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
+
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/test")

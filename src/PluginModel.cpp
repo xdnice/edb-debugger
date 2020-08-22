@@ -24,7 +24,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Name: PluginModel
 // Desc:
 //------------------------------------------------------------------------------
-PluginModel::PluginModel(QObject *parent) : QAbstractItemModel(parent) {
+PluginModel::PluginModel(QObject *parent)
+	: QAbstractItemModel(parent) {
 }
 
 //------------------------------------------------------------------------------
@@ -32,13 +33,13 @@ PluginModel::PluginModel(QObject *parent) : QAbstractItemModel(parent) {
 // Desc:
 //------------------------------------------------------------------------------
 QModelIndex PluginModel::index(int row, int column, const QModelIndex &parent) const {
-	Q_UNUSED(parent);
+	Q_UNUSED(parent)
 
-	if(row >= rowCount(parent) || column >= columnCount(parent)) {
+	if (row >= rowCount(parent) || column >= columnCount(parent)) {
 		return QModelIndex();
 	}
 
-	if(row >= 0) {
+	if (row >= 0) {
 		return createIndex(row, column, const_cast<Item *>(&items_[row]));
 	} else {
 		return createIndex(row, column);
@@ -50,7 +51,7 @@ QModelIndex PluginModel::index(int row, int column, const QModelIndex &parent) c
 // Desc:
 //------------------------------------------------------------------------------
 QModelIndex PluginModel::parent(const QModelIndex &index) const {
-	Q_UNUSED(index);
+	Q_UNUSED(index)
 	return QModelIndex();
 }
 
@@ -60,12 +61,12 @@ QModelIndex PluginModel::parent(const QModelIndex &index) const {
 //------------------------------------------------------------------------------
 QVariant PluginModel::data(const QModelIndex &index, int role) const {
 
-	if(index.isValid()) {
+	if (index.isValid()) {
 
 		const Item &item = items_[index.row()];
 
-		if(role == Qt::DisplayRole) {
-			switch(index.column()) {
+		if (role == Qt::DisplayRole) {
+			switch (index.column()) {
 			case 0:
 				return item.filename;
 			case 1:
@@ -87,8 +88,8 @@ QVariant PluginModel::data(const QModelIndex &index, int role) const {
 //------------------------------------------------------------------------------
 QVariant PluginModel::headerData(int section, Qt::Orientation orientation, int role) const {
 
-	if(role == Qt::DisplayRole && orientation == Qt::Horizontal) {
-		switch(section) {
+	if (role == Qt::DisplayRole && orientation == Qt::Horizontal) {
+		switch (section) {
 		case 0:
 			return tr("File Name");
 		case 1:
@@ -108,7 +109,7 @@ QVariant PluginModel::headerData(int section, Qt::Orientation orientation, int r
 // Desc:
 //------------------------------------------------------------------------------
 int PluginModel::columnCount(const QModelIndex &parent) const {
-	Q_UNUSED(parent);
+	Q_UNUSED(parent)
 	return 4;
 }
 
@@ -117,7 +118,7 @@ int PluginModel::columnCount(const QModelIndex &parent) const {
 // Desc:
 //------------------------------------------------------------------------------
 int PluginModel::rowCount(const QModelIndex &parent) const {
-	Q_UNUSED(parent);
+	Q_UNUSED(parent)
 	return items_.size();
 }
 
@@ -129,8 +130,12 @@ void PluginModel::addPlugin(const QString &filename, const QString &plugin, cons
 	beginInsertRows(QModelIndex(), rowCount(), rowCount());
 
 	const Item item = {
-		filename, plugin, author, url
+		filename,
+		plugin,
+		author,
+		url,
 	};
+
 	items_.push_back(item);
 	endInsertRows();
 }
@@ -140,7 +145,7 @@ void PluginModel::addPlugin(const QString &filename, const QString &plugin, cons
 // Desc:
 //------------------------------------------------------------------------------
 void PluginModel::clear() {
-	beginRemoveRows(QModelIndex(), 0, rowCount());
+	beginResetModel();
 	items_.clear();
-	endRemoveRows();
+	endResetModel();
 }

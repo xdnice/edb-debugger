@@ -17,14 +17,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "BinaryInfo.h"
-#include "DialogHeader.h"
+#include "DialogRegions.h"
 #include "ELFXX.h"
 #include "IBinary.h"
 #include "ISymbolManager.h"
+#include "OptionsPage.h"
 #include "PE32.h"
 #include "edb.h"
 #include "symbols.h"
-#include "OptionsPage.h"
 
 #include <QDebug>
 #include <QMenu>
@@ -33,96 +33,84 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <memory>
 
 namespace BinaryInfoPlugin {
-namespace {
 
-//------------------------------------------------------------------------------
-// Name: create_binary_info_elf32
-// Desc:
-//------------------------------------------------------------------------------
-std::unique_ptr<IBinary> create_binary_info_elf32(const std::shared_ptr<IRegion> &region) {
-	return std::unique_ptr<IBinary>(new ELF32(region));
+/**
+ * @brief BinaryInfo::BinaryInfo
+ * @param parent
+ */
+BinaryInfo::BinaryInfo(QObject *parent)
+	: QObject(parent) {
 }
 
-//------------------------------------------------------------------------------
-// Name: create_binary_info_elf64
-// Desc:
-//------------------------------------------------------------------------------
-std::unique_ptr<IBinary> create_binary_info_elf64(const std::shared_ptr<IRegion> &region) {
-	return std::unique_ptr<IBinary>(new ELF64(region));
+/**
+ * @brief BinaryInfo::privateInit
+ */
+void BinaryInfo::privateInit() {
+
+	edb::v1::register_binary_info([](const std::shared_ptr<IRegion> &region) {
+		return std::unique_ptr<IBinary>(new ELF32(region));
+	});
+
+	edb::v1::register_binary_info([](const std::shared_ptr<IRegion> &region) {
+		return std::unique_ptr<IBinary>(new ELF64(region));
+	});
+
+	edb::v1::register_binary_info([](const std::shared_ptr<IRegion> &region) {
+		return std::unique_ptr<IBinary>(new PE32(region));
+	});
+
+	edb::v1::symbol_manager().setSymbolGenerator(this);
 }
 
-//------------------------------------------------------------------------------
-// Name: create_binary_info_pe32
-// Desc:
-//------------------------------------------------------------------------------
-std::unique_ptr<IBinary> create_binary_info_pe32(const std::shared_ptr<IRegion> &region) {
-	return std::unique_ptr<IBinary>(new PE32(region));
-}
-
-}
-
-//------------------------------------------------------------------------------
-// Name: BinaryInfo
-// Desc:
-//------------------------------------------------------------------------------
-BinaryInfo::BinaryInfo(QObject *parent) : QObject(parent) {
-}
-
-//------------------------------------------------------------------------------
-// Name: private_init
-// Desc:
-//------------------------------------------------------------------------------
-void BinaryInfo::private_init() {
-	edb::v1::register_binary_info(create_binary_info_elf32);
-	edb::v1::register_binary_info(create_binary_info_elf64);
-	edb::v1::register_binary_info(create_binary_info_pe32);
-	edb::v1::symbol_manager().set_symbol_generator(this);
-}
-
-QWidget* BinaryInfo::options_page() {
+/**
+ * @brief BinaryInfo::optionsPage
+ * @return
+ */
+QWidget *BinaryInfo::optionsPage() {
 	return new OptionsPage;
 }
 
-//------------------------------------------------------------------------------
-// Name: menu
-// Desc:
-//------------------------------------------------------------------------------
+/**
+ * @brief BinaryInfo::menu
+ * @param parent
+ * @return
+ */
 QMenu *BinaryInfo::menu(QWidget *parent) {
 
 	Q_ASSERT(parent);
 
-	if(!menu_) {
+	if (!menu_) {
 		menu_ = new QMenu(tr("Binary Info"), parent);
-		menu_->addAction(tr("&Explore Binary Header"), this, SLOT(explore_header()));
+		menu_->addAction(tr("&Explore Binary Header"), this, SLOT(exploreHeader()));
 	}
 
 	return menu_;
 }
 
-//------------------------------------------------------------------------------
-// Name: explore_header
-// Desc:
-//------------------------------------------------------------------------------
-void BinaryInfo::explore_header() {
-	static auto dialog = new DialogHeader(edb::v1::debugger_ui);
+/**
+ * @brief BinaryInfo::exploreHeader
+ */
+void BinaryInfo::exploreHeader() {
+	static auto dialog = new DialogRegions(edb::v1::debugger_ui);
 	dialog->show();
 }
 
-//------------------------------------------------------------------------------
-// Name: extra_arguments
-// Desc:
-//------------------------------------------------------------------------------
-QString BinaryInfo::extra_arguments() const {
+/**
+ * @brief BinaryInfo::extraArguments
+ * @return
+ */
+QString BinaryInfo::extraArguments() const {
 	return " --symbols <filename>      : generate symbols for <filename> and exit";
 }
 
-//------------------------------------------------------------------------------
-// Name: parse_arguments
-// Desc:
-//------------------------------------------------------------------------------
-IPlugin::ArgumentStatus BinaryInfo::parse_arguments(QStringList &args) {
+/**
+ * @brief BinaryInfo::parseArguments
+ * @param args
+ * @return
+ */
+IPlugin::ArgumentStatus BinaryInfo::parseArguments(QStringList &args) {
 
-	if(args.size() == 3 && args[1] == "--symbols") {
+	if (args.size() == 3 && args[1] == "--symbols") {
 		generate_symbols(args[2]);
 		return ARG_EXIT;
 	}
@@ -130,15 +118,17 @@ IPlugin::ArgumentStatus BinaryInfo::parse_arguments(QStringList &args) {
 	return ARG_SUCCESS;
 }
 
-//------------------------------------------------------------------------------
-// Name: generate_symbol_file
-// Desc:
-//------------------------------------------------------------------------------
-bool BinaryInfo::generate_symbol_file(const QString &filename, const QString &symbol_file) {
+/**
+ * @brief BinaryInfo::generateSymbolFile
+ * @param filename
+ * @param symbol_file
+ * @return
+ */
+bool BinaryInfo::generateSymbolFile(const QString &filename, const QString &symbol_file) {
 
 	std::ofstream file(qPrintable(symbol_file));
-	if(file) {
-		if(generate_symbols(filename, file)) {
+	if (file) {
+		if (generate_symbols(filename, file)) {
 			return true;
 		}
 	}

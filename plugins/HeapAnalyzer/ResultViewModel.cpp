@@ -22,175 +22,201 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace HeapAnalyzerPlugin {
 
-//------------------------------------------------------------------------------
-// Name: ResultViewModel
-// Desc:
-//------------------------------------------------------------------------------
-ResultViewModel::ResultViewModel(QObject *parent) : QAbstractItemModel(parent), updates_enabled_(false) {
+/**
+ * @brief ResultViewModel::ResultViewModel
+ * @param parent
+ */
+ResultViewModel::ResultViewModel(QObject *parent)
+	: QAbstractItemModel(parent) {
 }
 
-//------------------------------------------------------------------------------
-// Name: headerData
-// Desc:
-//------------------------------------------------------------------------------
+/**
+ * @brief ResultViewModel::headerData
+ * @param section
+ * @param orientation
+ * @param role
+ * @return
+ */
 QVariant ResultViewModel::headerData(int section, Qt::Orientation orientation, int role) const {
 
-	if(role == Qt::DisplayRole && orientation == Qt::Horizontal) {
-		switch(section) {
-		case 0: return tr("Block");
-		case 1: return tr("Size");
-		case 2: return tr("Type");
-		case 3: return tr("Data");
+	if (role == Qt::DisplayRole && orientation == Qt::Horizontal) {
+		switch (section) {
+		case 0:
+			return tr("Block");
+		case 1:
+			return tr("Size");
+		case 2:
+			return tr("Type");
+		case 3:
+			return tr("Data");
 		}
 	}
 
 	return QVariant();
 }
 
-//------------------------------------------------------------------------------
-// Name: data
-// Desc:
-//------------------------------------------------------------------------------
+/**
+ * @brief ResultViewModel::data
+ * @param index
+ * @param role
+ * @return
+ */
 QVariant ResultViewModel::data(const QModelIndex &index, int role) const {
 
-	if(!index.isValid())
+	if (!index.isValid()) {
 		return QVariant();
+	}
 
-	if(role != Qt::DisplayRole)
+	if (role != Qt::DisplayRole) {
 		return QVariant();
+	}
 
 	const Result &result = results_[index.row()];
 
-	switch(index.column()) {
-	case 0:  return edb::v1::format_pointer(result.block);
-	case 1:  return edb::v1::format_pointer(result.size);
-	case 2:  return result.type;
-	case 3:  return result.data;
-	default: return QVariant();
+	switch (index.column()) {
+	case 0:
+		return edb::v1::format_pointer(result.address);
+	case 1:
+		return edb::v1::format_pointer(result.size);
+	case 2:
+		switch (result.type) {
+		case Result::Top:
+			return tr("Top");
+		case Result::Busy:
+			return tr("Busy");
+		case Result::Free:
+			return tr("Free");
+		}
+		return QVariant();
+	case 3: {
+		switch (result.dataType) {
+		case Result::Pointer: {
+			QStringList pointers;
+			if (edb::v1::debuggeeIs32Bit()) {
+				std::transform(result.pointers.begin(), result.pointers.end(), std::back_inserter(pointers), [](const edb::address_t pointer) -> QString {
+					return QString("dword ptr [%1]").arg(edb::v1::format_pointer(pointer));
+				});
+			} else {
+				std::transform(result.pointers.begin(), result.pointers.end(), std::back_inserter(pointers), [](const edb::address_t pointer) -> QString {
+					return QString("qword ptr [%1]").arg(edb::v1::format_pointer(pointer));
+				});
+			}
+			return pointers.join("|");
+		}
+		case Result::Png:
+			return tr("PNG IMAGE");
+		case Result::Xpm:
+			return tr("XPM IMAGE");
+		case Result::Bzip:
+			return tr("BZIP FILE");
+		case Result::Compress:
+			return tr("COMPRESS FILE");
+		case Result::Gzip:
+			return tr("GZIP FILE");
+		case Result::Ascii:
+			return tr("ASCII \"%1\"").arg(result.data);
+		case Result::Utf16:
+			return tr("UTF-16 \"%1\"").arg(result.data);
+		case Result::Unknown:
+			return QVariant();
+		}
+		return QVariant();
+	}
+	default:
+		return QVariant();
 	}
 }
 
-//------------------------------------------------------------------------------
-// Name: addResult
-// Desc:
-//------------------------------------------------------------------------------
+/**
+ * @brief ResultViewModel::addResult
+ * @param r
+ */
 void ResultViewModel::addResult(const Result &r) {
+	beginInsertRows(QModelIndex(), rowCount(), rowCount());
 	results_.push_back(r);
-	update();
+	endInsertRows();
 }
 
-//------------------------------------------------------------------------------
-// Name: clearResults
-// Desc:
-//------------------------------------------------------------------------------
+/**
+ * @brief ResultViewModel::clearResults
+ */
 void ResultViewModel::clearResults() {
+	beginResetModel();
 	results_.clear();
-	update();
+	endResetModel();
 }
 
-//------------------------------------------------------------------------------
-// Name: update
-// Desc:
-//------------------------------------------------------------------------------
-void ResultViewModel::update() {
-	if(updates_enabled_) {
-		beginResetModel();
-		endResetModel();
-	}
-}
-
-//------------------------------------------------------------------------------
-// Name: index
-// Desc:
-//------------------------------------------------------------------------------
+/**
+ * @brief ResultViewModel::index
+ * @param row
+ * @param column
+ * @param parent
+ * @return
+ */
 QModelIndex ResultViewModel::index(int row, int column, const QModelIndex &parent) const {
 
-	Q_UNUSED(parent);
+	Q_UNUSED(parent)
 
-	if(row >= results_.size()) {
+	if (row >= results_.size()) {
 		return QModelIndex();
 	}
 
-	if(column >= 4) {
+	if (column >= 4) {
 		return QModelIndex();
 	}
 
-	if(row >= 0) {
+	if (row >= 0) {
 		return createIndex(row, column, const_cast<Result *>(&results_[row]));
 	} else {
 		return createIndex(row, column);
 	}
 }
 
-//------------------------------------------------------------------------------
-// Name: parent
-// Desc:
-//------------------------------------------------------------------------------
+/**
+ * @brief ResultViewModel::parent
+ * @param index
+ * @return
+ */
 QModelIndex ResultViewModel::parent(const QModelIndex &index) const {
-	Q_UNUSED(index);
+	Q_UNUSED(index)
 	return QModelIndex();
 }
 
-//------------------------------------------------------------------------------
-// Name: rowCount
-// Desc:
-//------------------------------------------------------------------------------
+/**
+ * @brief ResultViewModel::rowCount
+ * @param parent
+ * @return
+ */
 int ResultViewModel::rowCount(const QModelIndex &parent) const {
-	Q_UNUSED(parent);
+	Q_UNUSED(parent)
 	return results_.size();
 }
 
-//------------------------------------------------------------------------------
-// Name: columnCount
-// Desc:
-//------------------------------------------------------------------------------
+/**
+ * @brief ResultViewModel::columnCount
+ * @param parent
+ * @return
+ */
 int ResultViewModel::columnCount(const QModelIndex &parent) const {
-	Q_UNUSED(parent);
+	Q_UNUSED(parent)
 	return 4;
 }
 
-//------------------------------------------------------------------------------
-// Name: sort
-// Desc:
-//------------------------------------------------------------------------------
-void ResultViewModel::sort(int column, Qt::SortOrder order) {
-
-	if(order == Qt::AscendingOrder) {
-		switch(column) {
-		case 0: std::sort(results_.begin(), results_.end(), [](const Result &s1, const Result &s2) { return s1.block < s2.block; }); break;
-		case 1: std::sort(results_.begin(), results_.end(), [](const Result &s1, const Result &s2) { return s1.size < s2.size; });   break;
-		case 2: std::sort(results_.begin(), results_.end(), [](const Result &s1, const Result &s2) { return s1.type < s2.type; });   break;
-		case 3: std::sort(results_.begin(), results_.end(), [](const Result &s1, const Result &s2)  { return s1.data < s2.data; });  break;
-		}
-	} else {
-		switch(column) {
-		case 0: std::sort(results_.begin(), results_.end(), [](const Result &s1, const Result &s2) { return s1.block > s2.block; }); break;
-		case 1: std::sort(results_.begin(), results_.end(), [](const Result &s1, const Result &s2) { return s1.size > s2.size; });   break;
-		case 2: std::sort(results_.begin(), results_.end(), [](const Result &s1, const Result &s2) { return s1.type > s2.type; });   break;
-		case 3: std::sort(results_.begin(), results_.end(), [](const Result &s1, const Result &s2) { return s1.data > s2.data; });   break;
-		}
+/**
+ * @brief ResultViewModel::setPointerData
+ * @param index
+ * @param data
+ */
+void ResultViewModel::setPointerData(const QModelIndex &index, const std::vector<edb::address_t> &pointers) {
+	if (!index.isValid()) {
+		return;
 	}
 
-	Q_EMIT dataChanged(createIndex(0, 0, nullptr), createIndex(-1, -1, nullptr));
-}
+	Result &result = results_[index.row()];
 
-//------------------------------------------------------------------------------
-// Name:
-// Desc:
-//------------------------------------------------------------------------------
-void ResultViewModel::setUpdatesEnabled(bool value) {
-	updates_enabled_ = value;
-	if(updates_enabled_) {
-		update();
-	}
-}
-
-//------------------------------------------------------------------------------
-// Name:
-// Desc:
-//------------------------------------------------------------------------------
-bool ResultViewModel::updatesEnabled() const {
-	return updates_enabled_;
+	result.pointers = pointers;
+	result.dataType = Result::Pointer;
+	Q_EMIT dataChanged(index, index);
 }
 
 }

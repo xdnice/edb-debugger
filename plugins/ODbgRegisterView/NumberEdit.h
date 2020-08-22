@@ -15,11 +15,14 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef NUMBER_EDIT_H_20190412_
+#define NUMBER_EDIT_H_20190412_
+
 #include <QLineEdit>
 
 namespace ODbgRegisterView {
 
-class NumberEdit : public QLineEdit {
+class NumberEdit final : public QLineEdit {
 	Q_OBJECT
 public:
 	NumberEdit(int column, int colSpan, QWidget *parent = nullptr);
@@ -35,9 +38,11 @@ public:
 	QSize sizeHint() const override;
 
 private:
-	int naturalWidthInChars = 17; // default roughly as in QLineEdit
+	int naturalWidthInChars_ = 17; // default roughly as in QLineEdit
 	int column_;
 	int colSpan_;
 };
 
 }
+
+#endif

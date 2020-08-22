@@ -16,12 +16,12 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef DEBUGEVENTS_20180312_H_
-#define DEBUGEVENTS_20180312_H_
+#ifndef DEBUG_EVENT_HANDLERS_H_20180312_
+#define DEBUG_EVENT_HANDLERS_H_20180312_
 
+#include "Types.h"
 #include <list>
 #include <memory>
-#include "Types.h"
 
 class IDebugEventHandler;
 class IDebugEvent;
@@ -52,26 +52,26 @@ program termination (std::abort is called).
 */
 class DebugEventHandlers {
 public:
-	DebugEventHandlers()                                      = default;
-	DebugEventHandlers(const DebugEventHandlers &)            = delete;
-	DebugEventHandlers& operator=(const DebugEventHandlers &) = delete;
+	DebugEventHandlers()                           = default;
+	DebugEventHandlers(const DebugEventHandlers &) = delete;
+	DebugEventHandlers &operator=(const DebugEventHandlers &) = delete;
 	~DebugEventHandlers();
 
 	void add(IDebugEventHandler *handler);
 	void remove(IDebugEventHandler *handler);
-	edb::EVENT_STATUS execute(const std::shared_ptr<IDebugEvent> &event);
+	edb::EventStatus execute(const std::shared_ptr<IDebugEvent> &event);
 
 private:
 	/*
 	list of registed handlers
 	*/
-	std::list<IDebugEventHandler*> handlers_;
+	std::list<IDebugEventHandler *> handlers_;
 
 	/*
 	the current handler that is being executed
 	nullptr means that none is being executed at the moment
 	*/
-	IDebugEventHandler* current_handler_ = nullptr;
+	IDebugEventHandler *currentHandler_ = nullptr;
 };
 
 #endif

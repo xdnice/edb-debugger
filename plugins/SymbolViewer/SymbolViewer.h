@@ -16,8 +16,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef SYMBOLVIEWER_20080812_H_
-#define SYMBOLVIEWER_20080812_H_
+#ifndef SYMBOL_VIEWER_H_20080812_
+#define SYMBOL_VIEWER_H_20080812_
 
 #include "IPlugin.h"
 
@@ -34,14 +34,14 @@ class SymbolViewer : public QObject, public IPlugin {
 	Q_CLASSINFO("url", "http://www.codef00.com")
 
 public:
-	SymbolViewer(QObject *parent = nullptr);
+	explicit SymbolViewer(QObject *parent = nullptr);
 	~SymbolViewer() override;
 
 public:
 	QMenu *menu(QWidget *parent = nullptr) override;
 
 public Q_SLOTS:
-	void show_menu();
+	void showMenu();
 
 private:
 	QMenu *menu_              = nullptr;

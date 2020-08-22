@@ -16,12 +16,12 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PLATFORM_REGION_20120330_H_
-#define PLATFORM_REGION_20120330_H_
+#ifndef PLATFORM_REGION_H_20120330_
+#define PLATFORM_REGION_H_20120330_
 
 #include "IRegion.h"
-#include <QString>
 #include <QCoreApplication>
+#include <QString>
 
 namespace DebuggerCorePlugin {
 
@@ -33,7 +33,7 @@ class PlatformRegion : public IRegion {
 
 public:
 	PlatformRegion(edb::address_t start, edb::address_t end, edb::address_t base, const QString &name, permissions_t permissions);
-	~PlatformRegion() override;
+	~PlatformRegion() override = default;
 
 public:
 	IRegion *clone() const override;
@@ -46,9 +46,9 @@ public:
 	size_t size() const override;
 
 public:
-	void set_permissions(bool read, bool write, bool execute) override;
-	void set_start(edb::address_t address) override;
-	void set_end(edb::address_t address) override;
+	void setPermissions(bool read, bool write, bool execute) override;
+	void setStart(edb::address_t address) override;
+	void setEnd(edb::address_t address) override;
 
 public:
 	edb::address_t start() const override;
@@ -61,8 +61,8 @@ private:
 	edb::address_t start_;
 	edb::address_t end_;
 	edb::address_t base_;
-	QString        name_;
-	permissions_t  permissions_;
+	QString name_;
+	permissions_t permissions_;
 };
 
 }

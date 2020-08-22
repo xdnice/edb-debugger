@@ -16,8 +16,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef OPCODESEARCHER_20060430_H_
-#define OPCODESEARCHER_20060430_H_
+#ifndef OPCODE_SEARCHER_H_20060430_
+#define OPCODE_SEARCHER_H_20060430_
 
 #include "IPlugin.h"
 
@@ -34,14 +34,14 @@ class OpcodeSearcher : public QObject, public IPlugin {
 	Q_CLASSINFO("url", "http://www.codef00.com")
 
 public:
-	OpcodeSearcher(QObject *parent = nullptr);
+	explicit OpcodeSearcher(QObject *parent = nullptr);
 	~OpcodeSearcher() override;
 
 public:
 	QMenu *menu(QWidget *parent = nullptr) override;
 
 public Q_SLOTS:
-	void show_menu();
+	void showMenu();
 
 private:
 	QMenu *menu_              = nullptr;

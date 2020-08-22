@@ -15,8 +15,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef DEBUGGER_ERROR_CONSOLE_H_20170808
-#define DEBUGGER_ERROR_CONSOLE_H_20170808
+#ifndef DEBUGGER_ERROR_CONSOLE_PLUGIN_H_20170808_
+#define DEBUGGER_ERROR_CONSOLE_PLUGIN_H_20170808_
 
 #include "IPlugin.h"
 #include "edb.h"
@@ -30,7 +30,7 @@ namespace DebuggerErrorConsolePlugin {
 class DebuggerErrorConsole : public QDialog {
 	Q_OBJECT
 public:
-    explicit DebuggerErrorConsole(QWidget* parent = nullptr);
+	explicit DebuggerErrorConsole(QWidget *parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
 };
 
 class Plugin : public QObject, public IPlugin {
@@ -41,18 +41,18 @@ class Plugin : public QObject, public IPlugin {
 	Q_CLASSINFO("email", "b7.10110111@gmail.com")
 
 public:
-	Plugin(QObject *parent = nullptr);
+	explicit Plugin(QObject *parent = nullptr);
 	~Plugin() override = default;
 
 public:
-	QMenu *menu(QWidget* parent = nullptr) override;
+	QMenu *menu(QWidget *parent = nullptr) override;
 
 private:
-	static void debugMessageIntercept(QtMsgType type, const QMessageLogContext&, const QString &message);
+	static void debugMessageIntercept(QtMsgType type, const QMessageLogContext &, const QString &message);
 
 private:
-	QPlainTextEdit* textWidget_ = nullptr;
-	QMenu* menu_                = nullptr;
+	QPlainTextEdit *textWidget_ = nullptr;
+	QMenu *menu_                = nullptr;
 };
 
 }

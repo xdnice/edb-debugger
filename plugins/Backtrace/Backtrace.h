@@ -16,8 +16,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef BACKTRACE_H
-#define BACKTRACE_H
+#ifndef BACKTRACE_H_20191119_
+#define BACKTRACE_H_20191119_
 
 #include "IPlugin.h"
 
@@ -34,17 +34,17 @@ class Backtrace : public QObject, public IPlugin {
 	Q_CLASSINFO("url", "https://github.com/Northern-Lights")
 
 public:
-	Backtrace(QObject *parent = nullptr);
+	explicit Backtrace(QObject *parent = nullptr);
 	~Backtrace() override;
 
 public:
 	QMenu *menu(QWidget *parent = nullptr) override;
 
 public Q_SLOTS:
-	void show_menu();
+	void showMenu();
 
 private:
-	QMenu	         *menu_   = nullptr;
+	QMenu *menu_              = nullptr;
 	QPointer<QDialog> dialog_ = nullptr;
 };
 

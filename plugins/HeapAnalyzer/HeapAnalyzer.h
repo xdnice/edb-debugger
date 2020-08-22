@@ -16,8 +16,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef HEAPANALYZER_20060430_H_
-#define HEAPANALYZER_20060430_H_
+#ifndef HEAP_ANALYZER_H_20060430_
+#define HEAP_ANALYZER_H_20060430_
 
 #include "IPlugin.h"
 
@@ -34,14 +34,14 @@ class HeapAnalyzer : public QObject, public IPlugin {
 	Q_CLASSINFO("url", "http://www.codef00.com")
 
 public:
-	HeapAnalyzer(QObject *parent = nullptr);
+	explicit HeapAnalyzer(QObject *parent = nullptr);
 	~HeapAnalyzer() override;
 
 public:
 	QMenu *menu(QWidget *parent = nullptr) override;
 
 public Q_SLOTS:
-	void show_menu();
+	void showMenu();
 
 private:
 	QMenu *menu_              = nullptr;

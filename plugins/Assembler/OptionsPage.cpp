@@ -17,85 +17,63 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "OptionsPage.h"
-#include <QSettings>
 #include <QDebug>
-#include <QFileDialog>
 #include <QDomDocument>
-
-#include "ui_OptionsPage.h"
+#include <QFileDialog>
+#include <QSettings>
 
 namespace AssemblerPlugin {
 
-//------------------------------------------------------------------------------
-// Name: OptionsPage
-// Desc:
-//------------------------------------------------------------------------------
-OptionsPage::OptionsPage(QWidget *parent) : QWidget(parent), ui(new Ui::OptionsPage) {
-	ui->setupUi(this);
+/**
+ * @brief OptionsPage::OptionsPage
+ * @param parent
+ * @param f
+ */
+OptionsPage::OptionsPage(QWidget *parent, Qt::WindowFlags f)
+	: QWidget(parent, f) {
 
+	ui.setupUi(this);
 
 	QSettings settings;
 	const QString name = settings.value("Assembler/helper", "yasm").toString();
 
+	ui.assemblerName->clear();
 
-	ui->assemblerName->clear();
-
-	const QString targetArch=
-#if defined EDB_X86 || defined EDB_X86_64
-			"x86"
-#elif defined EDB_ARM32
-			"arm"
-#elif defined EDB_ARM64
-			"aarch64"
+#if defined(EDB_X86) || defined(EDB_X86_64)
+	const QLatin1String targetArch("x86");
+#elif defined(EDB_ARM32)
+	const QLatin1String targetArch("arm");
+#elif defined(EDB_ARM64)
+	const QLatin1String targetArch("aarch64");
 #endif
-			;
 
 	QFile file(":/debugger/Assembler/xml/assemblers.xml");
-	if(file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+	if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
 		QDomDocument xml;
 		xml.setContent(&file);
 		QDomElement root = xml.documentElement();
 
-		for(QDomElement assembler = root.firstChildElement("assembler"); !assembler.isNull(); assembler = assembler.nextSiblingElement("assembler")) {
+		for (QDomElement assembler = root.firstChildElement("assembler"); !assembler.isNull(); assembler = assembler.nextSiblingElement("assembler")) {
 			const QString name = assembler.attribute("name");
-			const auto arch=assembler.attribute("arch");
-			if(arch==targetArch)
-				ui->assemblerName->addItem(name);
+			const QString arch = assembler.attribute("arch");
+			if (arch == targetArch) {
+				ui.assemblerName->addItem(name);
+			}
 		}
 	}
 
-
-
-
-
-	const int index = ui->assemblerName->findText(name, Qt::MatchFixedString);
-	if(index == -1 && ui->assemblerName->count() > 0) {
-		ui->assemblerName->setCurrentIndex(0);
+	const int index = ui.assemblerName->findText(name, Qt::MatchFixedString);
+	if (index == -1 && ui.assemblerName->count() > 0) {
+		ui.assemblerName->setCurrentIndex(0);
 	} else {
-		ui->assemblerName->setCurrentIndex(index);
+		ui.assemblerName->setCurrentIndex(index);
 	}
 }
 
-//------------------------------------------------------------------------------
-// Name: ~OptionsPage
-// Desc:
-//------------------------------------------------------------------------------
-OptionsPage::~OptionsPage() {
-	delete ui;
-}
-
-//------------------------------------------------------------------------------
-// Name: showEvent
-// Desc:
-//------------------------------------------------------------------------------
-void OptionsPage::showEvent(QShowEvent *event) {
-	Q_UNUSED(event);
-}
-
-//------------------------------------------------------------------------------
-// Name: on_assemblerName_currentIndexChanged
-// Desc:
-//------------------------------------------------------------------------------
+/**
+ * @brief OptionsPage::on_assemblerName_currentIndexChanged
+ * @param text
+ */
 void OptionsPage::on_assemblerName_currentIndexChanged(const QString &text) {
 	QSettings settings;
 	settings.setValue("Assembler/helper", text);

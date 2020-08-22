@@ -20,24 +20,13 @@ add_subdirectory(FunctionFinder)
 add_subdirectory(DebuggerErrorConsole)
 add_subdirectory(BinarySearcher)
 add_subdirectory(InstructionInspector)
+add_subdirectory(FasLoader)
+add_subdirectory(ODbgRegisterView)
 
-# NOTE(eteran): this is deprecated, will be removed at some point in the future...
-if(${BUILD_SIMPLE_REGISTER_VIEW})
-        add_subdirectory(SimpleRegView)
+if(TARGET_ARCH_FAMILY_X86)
+    add_subdirectory(HardwareBreakpoints)
 endif()
 
-if((${CMAKE_SYSTEM_PROCESSOR} MATCHES "i[3456]86") OR (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64") OR (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "AMD64"))
-        add_subdirectory(HardwareBreakpoints)
-endif()
-
-if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+if(TARGET_PLATFORM_LINUX)
     add_subdirectory(HeapAnalyzer)
 endif()
-
-if (NOT MSVC)
-	# TODO(eteran): having a hard time getting these to compile under MSVC
-	add_subdirectory(ODbgRegisterView)
-endif()
-
-
-

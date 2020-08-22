@@ -16,8 +16,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PE32_20070718_H_
-#define PE32_20070718_H_
+#ifndef PE32_H_20070718_
+#define PE32_H_20070718_
 
 #include "IBinary.h"
 #include "libPE/pe_binary.h"
@@ -35,7 +35,7 @@ public:
 
 public:
 	explicit PEBinaryException(Reason reason);
-	const char * what() const noexcept override;
+	const char *what() const noexcept override;
 
 private:
 	Reason reason_;
@@ -43,23 +43,20 @@ private:
 
 class PE32 : public IBinary {
 public:
-    explicit PE32(const std::shared_ptr<IRegion> &region);
-    ~PE32() override = default;
+	explicit PE32(const std::shared_ptr<IRegion> &region);
+	~PE32() override = default;
 
 public:
-    bool native() const override;
-    edb::address_t calculate_main() override;
-    edb::address_t debug_pointer() override;
-    edb::address_t entry_point() override;
-    size_t header_size() const override;
-    const void *header() const override;
+	bool native() const override;
+	edb::address_t entryPoint() override;
+	size_t headerSize() const override;
+	const void *header() const override;
 	std::vector<Header> headers() const override;
-    edb::address_t base_address() const override;
 
 private:
 	std::shared_ptr<IRegion> region_;
-	IMAGE_DOS_HEADER dos_;
-	IMAGE_NT_HEADERS32 pe_;
+	libPE::IMAGE_DOS_HEADER dos_  = {};
+	libPE::IMAGE_NT_HEADERS32 pe_ = {};
 };
 
 }

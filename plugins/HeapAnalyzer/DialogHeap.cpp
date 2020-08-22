@@ -20,23 +20,25 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "Configuration.h"
 #include "IDebugger.h"
 #include "IProcess.h"
+#include "IRegion.h"
 #include "ISymbolManager.h"
 #include "MemoryRegions.h"
 #include "Module.h"
+#include "ResultViewModel.h"
 #include "Symbol.h"
-#include "IRegion.h"
-#include "Util.h"
 #include "edb.h"
+#include "util/Math.h"
 
 #ifdef ENABLE_GRAPH
-#include "GraphWidget.h"
-#include "GraphNode.h"
 #include "GraphEdge.h"
+#include "GraphNode.h"
+#include "GraphWidget.h"
 #endif
 
 #include <QFileInfo>
 #include <QHeaderView>
 #include <QMessageBox>
+#include <QPushButton>
 #include <QSortFilterProxyModel>
 #include <QStack>
 #include <QString>
@@ -45,122 +47,69 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <algorithm>
 #include <functional>
 
-#include <QtConcurrent>
-#include "ui_DialogHeap.h"
-
 namespace HeapAnalyzerPlugin {
-
-constexpr int PREV_INUSE     = 0x1;
-constexpr int IS_MMAPPED     = 0x2;
-constexpr int NON_MAIN_ARENA = 0x4;
-
-constexpr int SIZE_BITS = (PREV_INUSE|IS_MMAPPED|NON_MAIN_ARENA);
-
-#define next_chunk(p, c) ((p) + ((c).chunk_size()))
-#define prev_chunk(p, c) ((p) - ((c).prev_size))
-
 namespace {
 
-// NOTE: the details of this structure are 32/64-bit sensitive!
+constexpr int PreviousInUse = 0x1;
+constexpr int IsMMapped     = 0x2;
+constexpr int NonMainArena  = 0x4;
 
+constexpr int SizeBits = (PreviousInUse | IsMMapped | NonMainArena);
+
+// NOTE: the details of this structure are 32/64-bit sensitive!
 template <class MallocChunkPtr>
 struct malloc_chunk {
 	using ULong = MallocChunkPtr; // ulong has the same size
 
-	ULong prev_size; /* Size of previous chunk (if free).  */
-	ULong size;      /* Size in bytes, including overhead. */
+	ULong prevSize; /* Size of previous chunk (if free).  */
+	ULong size;     /* Size in bytes, including overhead. */
 
 	MallocChunkPtr fd; /* double links -- used only if free. */
 	MallocChunkPtr bk;
 
-	edb::address_t chunk_size() const { return edb::address_t::fromZeroExtended(size & ~(SIZE_BITS)); }
-	bool prev_inuse() const  { return size & PREV_INUSE; }
+	edb::address_t chunkSize() const { return edb::address_t::fromZeroExtended(size & ~(SizeBits)); }
+	bool prevInUse() const { return size & PreviousInUse; }
 };
 
-//------------------------------------------------------------------------------
-// Name: block_start
-// Desc:
-//------------------------------------------------------------------------------
+template <class Addr>
+edb::address_t next_chunk(edb::address_t p, const malloc_chunk<Addr> &c) {
+	return p + c.chunkSize();
+}
+
+/**
+ * @brief block_start
+ * @param pointer
+ * @return
+ */
 edb::address_t block_start(edb::address_t pointer) {
 	return pointer + edb::v1::pointer_size() * 2; // pointer_size() is malloc_chunk*
 }
 
-//------------------------------------------------------------------------------
-// Name: block_start
-// Desc:
-//------------------------------------------------------------------------------
-edb::address_t block_start(const Result &result) {
-	return block_start(result.block);
+/**
+ * @brief block_start
+ * @param result
+ * @return
+ */
+edb::address_t block_start(const ResultViewModel::Result &result) {
+	return block_start(result.address);
 }
 
-}
-
-//------------------------------------------------------------------------------
-// Name: DialogHeap
-// Desc:
-//------------------------------------------------------------------------------
-DialogHeap::DialogHeap(QWidget *parent) : QDialog(parent), ui(new Ui::DialogHeap) {
-	ui->setupUi(this);
-
-	model_ = new ResultViewModel(this);
-	ui->tableView->setModel(model_);
-
-	ui->tableView->verticalHeader()->hide();
-	ui->tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
-
-#ifdef ENABLE_GRAPH
-	ui->btnGraph->setEnabled(true);
-#else
-	ui->btnGraph->setEnabled(false);
-#endif
-}
-
-//------------------------------------------------------------------------------
-// Name: ~DialogHeap
-// Desc:
-//------------------------------------------------------------------------------
-DialogHeap::~DialogHeap() {
-	delete ui;
-}
-
-//------------------------------------------------------------------------------
-// Name: showEvent
-// Desc:
-//------------------------------------------------------------------------------
-void DialogHeap::showEvent(QShowEvent *) {
-	model_->clearResults();
-	ui->progressBar->setValue(0);
-}
-
-//------------------------------------------------------------------------------
-// Name: on_resultTable_cellDoubleClicked
-// Desc:
-//------------------------------------------------------------------------------
-void DialogHeap::on_tableView_doubleClicked(const QModelIndex &index) {
-
-	// NOTE: remember that if we use a sort filter, we need to map the indexes
-	// to get at the data we need
-
-	if(auto item = static_cast<Result *>(index.internalPointer())) {
-		edb::v1::dump_data_range(item->block, item->block + item->size, false);
-	}
-}
-
-//------------------------------------------------------------------------------
-// Name: get_library_names
-// Desc:
-//------------------------------------------------------------------------------
-void DialogHeap::get_library_names(QString *libcName, QString *ldName) const {
+/**
+ * @brief get_library_names
+ * @param libcName
+ * @param ldName
+ */
+void get_library_names(QString *libcName, QString *ldName) {
 
 	Q_ASSERT(libcName);
 	Q_ASSERT(ldName);
 
-	if(edb::v1::debugger_core) {
-		if(IProcess *process = edb::v1::debugger_core->process()) {
-			const QList<Module> libs = process->loaded_modules();
+	if (edb::v1::debugger_core) {
+		if (IProcess *process = edb::v1::debugger_core->process()) {
+			const QList<Module> libs = process->loadedModules();
 
-			for(const Module &module: libs) {
-				if(!ldName->isEmpty() && !libcName->isEmpty()) {
+			for (const Module &module : libs) {
+				if (!ldName->isEmpty() && !libcName->isEmpty()) {
 					break;
 				}
 
@@ -170,19 +119,19 @@ void DialogHeap::get_library_names(QString *libcName, QString *ldName) const {
 				// possibilities we need to find out if this is 100% accurate, so far
 				// seems correct based on my system
 
-				if(fileinfo.completeBaseName().startsWith("libc-")) {
+				if (fileinfo.completeBaseName().startsWith("libc-")) {
 					*libcName = fileinfo.completeBaseName() + "." + fileinfo.suffix();
 					qDebug() << "[Heap Analyzer] libc library appears to be:" << *libcName;
 					continue;
 				}
 
-				if(fileinfo.completeBaseName().startsWith("libc.so")) {
+				if (fileinfo.completeBaseName().startsWith("libc.so")) {
 					*libcName = fileinfo.completeBaseName() + "." + fileinfo.suffix();
 					qDebug() << "[Heap Analyzer] libc library appears to be:" << *libcName;
 					continue;
 				}
 
-				if(fileinfo.completeBaseName().startsWith("ld-")) {
+				if (fileinfo.completeBaseName().startsWith("ld-")) {
 					*ldName = fileinfo.completeBaseName() + "." + fileinfo.suffix();
 					qDebug() << "[Heap Analyzer] ld library appears to be:" << *ldName;
 					continue;
@@ -192,117 +141,254 @@ void DialogHeap::get_library_names(QString *libcName, QString *ldName) const {
 	}
 }
 
-//------------------------------------------------------------------------------
-// Name: process_potential_pointer
-// Desc:
-//------------------------------------------------------------------------------
-void DialogHeap::process_potential_pointer(const QHash<edb::address_t, edb::address_t> &targets, Result &result) {
+}
 
-	if(IProcess *process = edb::v1::debugger_core->process()) {
-		if(result.data.isEmpty()) {
-			edb::address_t pointer(0);
-			edb::address_t block_ptr = block_start(result);
-			edb::address_t block_end = block_ptr + result.size;
+/**
+ * @brief DialogHeap::DialogHeap
+ * @param parent
+ * @param f
+ */
+DialogHeap::DialogHeap(QWidget *parent, Qt::WindowFlags f)
+	: QDialog(parent, f) {
+	ui.setupUi(this);
 
-			while(block_ptr < block_end) {
+	model_ = new ResultViewModel(this);
 
-				if(process->read_bytes(block_ptr, &pointer, edb::v1::pointer_size())) {
-					auto it = targets.find(pointer);
-					if(it != targets.end()) {
-					#if QT_POINTER_SIZE == 4
-						result.data += QString("dword ptr [%1] |").arg(edb::v1::format_pointer(it.key()));
-					#elif QT_POINTER_SIZE == 8
-						result.data += QString("qword ptr [%1] |").arg(edb::v1::format_pointer(it.key()));
-					#endif
-					result.points_to.push_back(it.value());
-					}
+	filterModel_ = new QSortFilterProxyModel(this);
+	connect(ui.lineEdit, &QLineEdit::textChanged, filterModel_, &QSortFilterProxyModel::setFilterFixedString);
+
+	filterModel_->setFilterKeyColumn(3);
+	filterModel_->setSourceModel(model_);
+	ui.tableView->setModel(filterModel_);
+
+	ui.tableView->verticalHeader()->hide();
+	ui.tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+
+	buttonAnalyze_ = new QPushButton(QIcon::fromTheme("edit-find"), tr("Analyze"));
+	buttonGraph_   = new QPushButton(QIcon::fromTheme("distribute-graph"), tr("&Graph Selected Blocks"));
+	connect(buttonAnalyze_, &QPushButton::clicked, this, [this]() {
+		buttonAnalyze_->setEnabled(false);
+		ui.progressBar->setValue(0);
+		ui.tableView->setUpdatesEnabled(false);
+
+		if (edb::v1::debuggeeIs32Bit()) {
+			doFind<edb::value32>();
+		} else {
+			doFind<edb::value64>();
+		}
+
+		ui.tableView->setUpdatesEnabled(true);
+		ui.progressBar->setValue(100);
+		buttonAnalyze_->setEnabled(true);
+	});
+
+	connect(buttonGraph_, &QPushButton::clicked, this, [this]() {
+#ifdef ENABLE_GRAPH
+		constexpr int MaxNodes = 5000;
+
+		auto graph = new GraphWidget(nullptr);
+		graph->setAttribute(Qt::WA_DeleteOnClose);
+
+		do {
+			QMap<edb::address_t, GraphNode *> nodes;
+			QStack<const ResultViewModel::Result *> result_stack;
+			QSet<const ResultViewModel::Result *> seen_results;
+
+			QMap<edb::address_t, const ResultViewModel::Result *> result_map = createResultMap();
+
+			// seed our search with the selected blocks
+			const QItemSelectionModel *const selModel = ui.tableView->selectionModel();
+			const QModelIndexList sel                 = selModel->selectedRows();
+			if (sel.size() != 0) {
+				for (const QModelIndex &index : sel) {
+					const QModelIndex idx = filterModel_->mapToSource(index);
+					auto item             = static_cast<ResultViewModel::Result *>(idx.internalPointer());
+					result_stack.push(item);
+					seen_results.insert(item);
 				}
-
-				block_ptr += edb::v1::pointer_size();
 			}
 
-			result.data.truncate(result.data.size() - 2);
+			while (!result_stack.isEmpty()) {
+				const ResultViewModel::Result *const result = result_stack.pop();
+
+				GraphNode *node = new GraphNode(graph, edb::v1::format_pointer(result->address), result->type == ResultViewModel::Result::Busy ? Qt::lightGray : Qt::red);
+
+				nodes.insert(result->address, node);
+
+				for (edb::address_t pointer : result->pointers) {
+					const ResultViewModel::Result *next_result = result_map[pointer];
+					if (!seen_results.contains(next_result)) {
+						seen_results.insert(next_result);
+						result_stack.push(next_result);
+					}
+				}
+			}
+			qDebug("[Heap Analyzer] Done Processing %d Nodes", nodes.size());
+
+			if (nodes.size() > MaxNodes) {
+				qDebug("[Heap Analyzer] Too Many Nodes! (%d)", nodes.size());
+				delete graph;
+				return;
+			}
+
+			Q_FOREACH (const ResultViewModel::Result *result, result_map) {
+				const edb::address_t addr = result->address;
+				if (nodes.contains(addr)) {
+					for (edb::address_t pointer : result->pointers) {
+						new GraphEdge(nodes[addr], nodes[pointer]);
+					}
+				}
+			}
+			qDebug("[Heap Analyzer] Done Processing Edges");
+		} while (0);
+
+		graph->layout();
+		graph->show();
+#endif
+	});
+
+	ui.buttonBox->addButton(buttonGraph_, QDialogButtonBox::ActionRole);
+	ui.buttonBox->addButton(buttonAnalyze_, QDialogButtonBox::ActionRole);
+
+#ifdef ENABLE_GRAPH
+	buttonGraph_->setEnabled(true);
+#else
+	buttonGraph_->setEnabled(false);
+#endif
+}
+
+/**
+ * @brief DialogHeap::showEvent
+ */
+void DialogHeap::showEvent(QShowEvent *) {
+	model_->clearResults();
+	ui.progressBar->setValue(0);
+}
+
+/**
+ * @brief DialogHeap::on_tableView_doubleClicked
+ * @param index
+ */
+void DialogHeap::on_tableView_doubleClicked(const QModelIndex &index) {
+	const QModelIndex idx = filterModel_->mapToSource(index);
+	if (auto item = static_cast<ResultViewModel::Result *>(idx.internalPointer())) {
+		edb::v1::dump_data_range(item->address, item->address + item->size, false);
+	}
+}
+
+/**
+ * @brief DialogHeap::processPotentialPointers
+ * @param targets
+ * @param index
+ */
+void DialogHeap::processPotentialPointers(const QHash<edb::address_t, edb::address_t> &targets, const QModelIndex &index) {
+
+	if (auto result = static_cast<ResultViewModel::Result *>(index.internalPointer())) {
+
+		std::vector<edb::address_t> pointers;
+
+		if (IProcess *process = edb::v1::debugger_core->process()) {
+			if (result->dataType == ResultViewModel::Result::Unknown) {
+				edb::address_t pointer(0);
+				edb::address_t block_ptr = block_start(*result);
+				edb::address_t block_end = block_ptr + result->size;
+
+				while (block_ptr < block_end) {
+
+					if (process->readBytes(block_ptr, &pointer, edb::v1::pointer_size())) {
+						auto it = targets.find(pointer);
+						if (it != targets.end()) {
+							pointers.push_back(it.value());
+						}
+					}
+
+					block_ptr += edb::v1::pointer_size();
+				}
+
+				if (!pointers.empty()) {
+					model_->setPointerData(index, pointers);
+				}
+			}
 		}
 	}
 }
 
-//------------------------------------------------------------------------------
-// Name: detect_pointers
-// Desc:
-//------------------------------------------------------------------------------
-void DialogHeap::detect_pointers() {
+/**
+ * @brief DialogHeap::detectPointers
+ */
+void DialogHeap::detectPointers() {
 
 	qDebug() << "[Heap Analyzer] detecting pointers in heap blocks";
 
 	QHash<edb::address_t, edb::address_t> targets;
-	QVector<Result> &results = model_->results();
 
-	// the potential targets
 	qDebug() << "[Heap Analyzer] collecting possible targets addresses";
-	for(const Result &result: results) {
-		edb::address_t block_ptr = block_start(result);
-		edb::address_t block_end = block_ptr + result.size;
-		while(block_ptr < block_end) {
-			targets.insert(block_ptr, result.block);
-			block_ptr += edb::v1::pointer_size();
+	for (int row = 0; row < model_->rowCount(); ++row) {
+		QModelIndex index = model_->index(row, 0);
+		if (auto result = static_cast<ResultViewModel::Result *>(index.internalPointer())) {
+			edb::address_t block_ptr = block_start(*result);
+			edb::address_t block_end = block_ptr + result->size;
+			while (block_ptr < block_end) {
+				targets.insert(block_ptr, result->address);
+				block_ptr += edb::v1::pointer_size();
+			}
 		}
 	}
 
-	QtConcurrent::blockingMap(results, [this, targets](Result &result) {
-		process_potential_pointer(targets, result);
-	});
-
-	model_->update();
+	qDebug() << "[Heap Analyzer] linking blocks to taget addresses";
+	for (int row = 0; row < model_->rowCount(); ++row) {
+		QModelIndex index = model_->index(row, 0);
+		processPotentialPointers(targets, index);
+	}
 }
 
-//------------------------------------------------------------------------------
-// Name: collect_blocks
-// Desc:
-//------------------------------------------------------------------------------
-template<class Addr>
-void DialogHeap::collect_blocks(edb::address_t start_address, edb::address_t end_address) {
+/**
+ * @brief DialogHeap::collectBlocks
+ * @param start_address
+ * @param end_address
+ */
+template <class Addr>
+void DialogHeap::collectBlocks(edb::address_t start_address, edb::address_t end_address) {
 	model_->clearResults();
+	ui.labelFree->setText(tr("Free Blocks: ?"));
+	ui.labelBusy->setText(tr("Busy Blocks: ?"));
+	ui.labelTotal->setText(tr("Total: ?"));
 
-	if(IProcess *process = edb::v1::debugger_core->process()) {
+	int64_t freeBlocks = 0;
+	int64_t busyBlocks = 0;
+
+	if (IProcess *process = edb::v1::debugger_core->process()) {
 		const int min_string_length = edb::v1::config().min_string_length;
 
-		if(start_address != 0 && end_address != 0) {
-	#if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD) || defined(Q_OS_OPENBSD)
+		if (start_address != 0 && end_address != 0) {
+#if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD) || defined(Q_OS_OPENBSD)
 			malloc_chunk<Addr> currentChunk;
 			malloc_chunk<Addr> nextChunk;
 			edb::address_t currentChunkAddress = start_address;
 
-			model_->setUpdatesEnabled(false);
-
 			const edb::address_t how_many = end_address - start_address;
-			while(currentChunkAddress != end_address) {
+			while (currentChunkAddress != end_address) {
 				// read in the current chunk..
-				process->read_bytes(currentChunkAddress, &currentChunk, sizeof(currentChunk));
+				process->readBytes(currentChunkAddress, &currentChunk, sizeof(currentChunk));
 
 				// figure out the address of the next chunk
 				const edb::address_t nextChunkAddress = next_chunk(currentChunkAddress, currentChunk);
 
 				// is this the last chunk (if so, it's the 'top')
-				if(nextChunkAddress == end_address) {
-
-					const Result r(
-						currentChunkAddress,
-						currentChunk.chunk_size(),
-						tr("Top"));
-
-					model_->addResult(r);
-
+				if (nextChunkAddress == end_address) {
+					model_->addResult({currentChunkAddress, currentChunk.chunkSize(), ResultViewModel::Result::Top, ResultViewModel::Result::Unknown, {}, {}});
 				} else {
 
 					// make sure we aren't following a broken heap...
-					if(nextChunkAddress > end_address || nextChunkAddress < start_address) {
+					if (nextChunkAddress > end_address || nextChunkAddress < start_address) {
 						break;
 					}
 
 					QString data;
+					ResultViewModel::Result::DataType data_type = ResultViewModel::Result::Unknown;
 
 					// read in the next chunk
-					process->read_bytes(nextChunkAddress, &nextChunk, sizeof(nextChunk));
+					process->readBytes(nextChunkAddress, &nextChunk, sizeof(nextChunk));
 
 					// if this block is a container for an ascii string, display it...
 					// there is a lot of room for improvement here, but it's a start
@@ -310,86 +396,100 @@ void DialogHeap::collect_blocks(edb::address_t start_address, edb::address_t end
 					QString utf16Data;
 					int asciisz;
 					int utf16sz;
-					if(edb::v1::get_ascii_string_at_address(
+					if (edb::v1::get_ascii_string_at_address(
 							block_start(currentChunkAddress),
 							asciiData,
 							min_string_length,
-							currentChunk.chunk_size(),
+							currentChunk.chunkSize(),
 							asciisz)) {
 
-						data = QString("ASCII \"%1\"").arg(asciiData);
-					} else if(edb::v1::get_utf16_string_at_address(
-							block_start(currentChunkAddress),
-							utf16Data,
-							min_string_length,
-							currentChunk.chunk_size(),
-							utf16sz)) {
-						data = QString("UTF-16 \"%1\"").arg(utf16Data);
+						data      = asciiData;
+						data_type = ResultViewModel::Result::Ascii;
+					} else if (edb::v1::get_utf16_string_at_address(
+								   block_start(currentChunkAddress),
+								   utf16Data,
+								   min_string_length,
+								   currentChunk.chunkSize(),
+								   utf16sz)) {
+						data      = utf16Data;
+						data_type = ResultViewModel::Result::Utf16;
 					} else {
 
 						using std::memcmp;
 
-						quint8 bytes[16];
-						process->read_bytes(block_start(currentChunkAddress), bytes, sizeof(bytes));
+						uint8_t bytes[16];
+						process->readBytes(block_start(currentChunkAddress), bytes, sizeof(bytes));
 
-						if(memcmp(bytes, "\x89\x50\x4e\x47", 4) == 0) {
-							data = "PNG IMAGE";
-						} else if(memcmp(bytes, "\x2f\x2a\x20\x58\x50\x4d\x20\x2a\x2f", 9) == 0) {
-							data = "XPM IMAGE";
-						} else if(memcmp(bytes, "\x42\x5a", 2) == 0) {
-							data = "BZIP FILE";
-						} else if(memcmp(bytes, "\x1f\x9d", 2) == 0) {
-							data = "COMPRESS FILE";
-						} else if(memcmp(bytes, "\x1f\x8b", 2) == 0) {
-							data = "GZIP FILE";
+						if (memcmp(bytes, "\x89\x50\x4e\x47", 4) == 0) {
+							data_type = ResultViewModel::Result::Png;
+						} else if (memcmp(bytes, "\x2f\x2a\x20\x58\x50\x4d\x20\x2a\x2f", 9) == 0) {
+							data_type = ResultViewModel::Result::Xpm;
+						} else if (memcmp(bytes, "\x42\x5a", 2) == 0) {
+							data_type = ResultViewModel::Result::Bzip;
+						} else if (memcmp(bytes, "\x1f\x9d", 2) == 0) {
+							data_type = ResultViewModel::Result::Compress;
+						} else if (memcmp(bytes, "\x1f\x8b", 2) == 0) {
+							data_type = ResultViewModel::Result::Gzip;
 						}
-
 					}
 
-					const Result r(
+					// TODO(eteran): should this be unsigned int? Or should it be sizeof(value32)/sizeof(value64)?
+					const ResultViewModel::Result r{
 						currentChunkAddress,
-						currentChunk.chunk_size() + sizeof(unsigned int),
-						nextChunk.prev_inuse() ? tr("Busy") : tr("Free"),
-						data);
+						currentChunk.chunkSize() + sizeof(unsigned int),
+						nextChunk.prevInUse() ? ResultViewModel::Result::Busy : ResultViewModel::Result::Free,
+						data_type,
+						data,
+						{}};
+
+					if (nextChunk.prevInUse()) {
+						++busyBlocks;
+					} else {
+						++freeBlocks;
+					}
 
 					model_->addResult(r);
 				}
 
 				// avoif self referencing blocks
-				if(currentChunkAddress == nextChunkAddress) {
+				if (currentChunkAddress == nextChunkAddress) {
 					break;
 				}
 
 				currentChunkAddress = nextChunkAddress;
 
-				ui->progressBar->setValue(util::percentage(currentChunkAddress - start_address, how_many));
+				ui.progressBar->setValue(util::percentage(currentChunkAddress - start_address, how_many));
 			}
 
-			detect_pointers();
-			model_->setUpdatesEnabled(true);
+			detectPointers();
 
+			ui.labelFree->setText(tr("Free Blocks: %1").arg(freeBlocks));
+			ui.labelBusy->setText(tr("Busy Blocks: %1").arg(busyBlocks));
+			ui.labelTotal->setText(tr("Total: %1").arg(freeBlocks + busyBlocks));
 
-	#else
-		#error "Unsupported Platform"
-	#endif
+#else
+#error "Unsupported Platform"
+#endif
 		}
 	}
 }
 
-//------------------------------------------------------------------------------
-// Name: find_heap_start_heuristic
-// Desc:
-//------------------------------------------------------------------------------
-edb::address_t DialogHeap::find_heap_start_heuristic(edb::address_t end_address, size_t offset) const {
+/**
+ * @brief DialogHeap::findHeapStartHeuristic
+ * @param end_address
+ * @param offset
+ * @return
+ */
+edb::address_t DialogHeap::findHeapStartHeuristic(edb::address_t end_address, size_t offset) const {
 	const edb::address_t start_address = end_address - offset;
 
 	const edb::address_t heap_symbol = start_address - 4 * edb::v1::pointer_size();
 
 	edb::address_t test_addr(0);
-	if(IProcess *process = edb::v1::debugger_core->process()) {
-		process->read_bytes(heap_symbol, &test_addr, edb::v1::pointer_size());
+	if (IProcess *process = edb::v1::debugger_core->process()) {
+		process->readBytes(heap_symbol, &test_addr, edb::v1::pointer_size());
 
-		if(test_addr != edb::v1::debugger_core->page_size()) {
+		if (test_addr != edb::v1::debugger_core->pageSize()) {
 			return 0;
 		}
 
@@ -399,16 +499,15 @@ edb::address_t DialogHeap::find_heap_start_heuristic(edb::address_t end_address,
 	return 0;
 }
 
-//------------------------------------------------------------------------------
-// Name: do_find
-// Desc:
-//------------------------------------------------------------------------------
-template<class Addr>
-void DialogHeap::do_find() {
+/**
+ * @brief DialogHeap::do_find
+ */
+template <class Addr>
+void DialogHeap::doFind() {
 	// get both the libc and ld symbols of __curbrk
 	// this will be the 'before/after libc' addresses
 
-	if(IProcess *process = edb::v1::debugger_core->process()) {
+	if (IProcess *process = edb::v1::debugger_core->process()) {
 		edb::address_t start_address = 0;
 		edb::address_t end_address   = 0;
 
@@ -416,175 +515,92 @@ void DialogHeap::do_find() {
 		QString ldName;
 
 		get_library_names(&libcName, &ldName);
-	#if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD) || defined(Q_OS_OPENBSD)
+#if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD) || defined(Q_OS_OPENBSD)
 
-		if(std::shared_ptr<Symbol> s = edb::v1::symbol_manager().find(libcName + "::__curbrk")) {
+		if (std::shared_ptr<Symbol> s = edb::v1::symbol_manager().find(libcName + "::__curbrk")) {
 			end_address = s->address;
 		} else {
 			qDebug() << "[Heap Analyzer] __curbrk symbol not found in libc, falling back on heuristic! This may or may not work.";
 		}
 
-		if(std::shared_ptr<Symbol> s = edb::v1::symbol_manager().find(ldName + "::__curbrk")) {
+		if (std::shared_ptr<Symbol> s = edb::v1::symbol_manager().find(ldName + "::__curbrk")) {
 			start_address = s->address;
 		} else {
 
 			qDebug() << "[Heap Analyzer] __curbrk symbol not found in ld, falling back on heuristic! This may or may not work.";
 
-			for(edb::address_t offset = 0x0000; offset != 0x1000; offset += edb::v1::pointer_size()) {
-				start_address = find_heap_start_heuristic(end_address, offset);
-				if(start_address != 0) {
+			for (edb::address_t offset = 0x0000; offset != 0x1000; offset += edb::v1::pointer_size()) {
+				start_address = findHeapStartHeuristic(end_address, offset);
+				if (start_address != 0) {
 					break;
 				}
 			}
 		}
 
-		if(start_address != 0 && end_address != 0) {
+		if (start_address != 0 && end_address != 0) {
 			qDebug() << "[Heap Analyzer] heap start symbol : " << edb::v1::format_pointer(start_address);
 			qDebug() << "[Heap Analyzer] heap end symbol   : " << edb::v1::format_pointer(end_address);
 
 			// read the contents of those symbols
-			process->read_bytes(end_address, &end_address, edb::v1::pointer_size());
-			process->read_bytes(start_address, &start_address, edb::v1::pointer_size());
+			process->readBytes(end_address, &end_address, edb::v1::pointer_size());
+			process->readBytes(start_address, &start_address, edb::v1::pointer_size());
 		}
 
 		// just assume it's the bounds of the [heap] memory region for now
-		if(start_address == 0 || end_address == 0) {
+		if (start_address == 0 || end_address == 0) {
 
 			const QList<std::shared_ptr<IRegion>> &regions = edb::v1::memory_regions().regions();
-			for(const std::shared_ptr<IRegion> &region: regions) {
 
-				if(region->name() == "[heap]") {
+			auto it = std::find_if(regions.begin(), regions.end(), [](const std::shared_ptr<IRegion> &region) {
+				return region->name() == "[heap]";
+			});
 
-					qDebug() << "Found a memory region named '[heap]', assuming that it provides sane bounds";
+			if (it != regions.end()) {
+				qDebug() << "Found a memory region named '[heap]', assuming that it provides sane bounds";
 
-					if(start_address == 0) {
-						start_address = region->start();
-					}
+				if (start_address == 0) {
+					start_address = (*it)->start();
+				}
 
-					if(end_address == 0) {
-						end_address = region->end();
-					}
-
-					break;
+				if (end_address == 0) {
+					end_address = (*it)->end();
 				}
 			}
 		}
 
 		// ok, I give up
-		if(start_address == 0 || end_address == 0) {
+		if (start_address == 0 || end_address == 0) {
 			QMessageBox::critical(this, tr("Could not calculate heap bounds"), tr("Failed to calculate the bounds of the heap."));
 			return;
 		}
 
-	#else
-		#error "Unsupported Platform"
-	#endif
+#else
+#error "Unsupported Platform"
+#endif
 
 		qDebug() << "[Heap Analyzer] heap start : " << edb::v1::format_pointer(start_address);
 		qDebug() << "[Heap Analyzer] heap end   : " << edb::v1::format_pointer(end_address);
 
-		collect_blocks<Addr>(start_address, end_address);
+		collectBlocks<Addr>(start_address, end_address);
 	}
 }
 
-//------------------------------------------------------------------------------
-// Name: on_btnFind_clicked
-// Desc:
-//------------------------------------------------------------------------------
-void DialogHeap::on_btnFind_clicked() {
-	ui->btnFind->setEnabled(false);
-	ui->progressBar->setValue(0);
-	if(edb::v1::debuggeeIs32Bit())
-		do_find<edb::value32>();
-	else
-		do_find<edb::value64>();
-	ui->progressBar->setValue(100);
-	ui->btnFind->setEnabled(true);
-}
+/**
+ * @brief DialogHeap::createResultMap
+ * @return
+ */
+QMap<edb::address_t, const ResultViewModel::Result *> DialogHeap::createResultMap() const {
 
-//------------------------------------------------------------------------------
-// Name: on_btnGraph_clicked
-// Desc:
-//------------------------------------------------------------------------------
-void DialogHeap::on_btnGraph_clicked() {
-#ifdef ENABLE_GRAPH
+	const QVector<ResultViewModel::Result> &results = model_->results();
+	QMap<edb::address_t, const ResultViewModel::Result *> result_map;
 
-	auto graph = new GraphWidget(nullptr);
-	graph->setAttribute(Qt::WA_DeleteOnClose);
+	// first we make a nice index for our results, this is likely redundant,
+	// but won't take long
+	for (const ResultViewModel::Result &result : results) {
+		result_map.insert(result.address, &result);
+	}
 
-
-	const QVector<Result> &results = model_->results();
-
-	do {
-		QMap<edb::address_t, GraphNode *>     nodes;
-		QHash<edb::address_t, const Result *> result_map;
-		QStack<const Result *>                result_stack;
-		QSet<const Result *>                  seen_results;
-
-		// first we make a nice index for our results, this is likely redundant,
-		// but won't take long
-		for(const Result &result: results) {
-			result_map.insert(result.block, &result);
-		}
-
-		// seed our search with the selected blocks
-		const QItemSelectionModel *const selModel = ui->tableView->selectionModel();
-		const QModelIndexList sel = selModel->selectedRows();
-		if(sel.size() != 0) {
-			for(const QModelIndex &index: sel) {
-				auto item = static_cast<Result *>(index.internalPointer());
-				result_stack.push(item);
-				seen_results.insert(item);
-			}
-		}
-
-		while(!result_stack.isEmpty()) {
-			const Result *const result = result_stack.pop();
-
-			GraphNode *node;
-			if(result->type == tr("Busy")) {
-				node = new GraphNode(graph, edb::v1::format_pointer(result->block), Qt::lightGray);
-			} else {
-				node = new GraphNode(graph, edb::v1::format_pointer(result->block), Qt::red);
-			}
-
-			nodes.insert(result->block, node);
-
-			for(edb::address_t pointer: result->points_to) {
-				const Result *next_result = result_map[pointer];
-				if(!seen_results.contains(next_result)) {
-					seen_results.insert(next_result);
-					result_stack.push(next_result);
-				}
-			}
-		}
-
-		qDebug("[Heap Analyzer] Done Processing %d Nodes", nodes.size());
-
-#if 1
-		if(nodes.size() > 5000) {
-			qDebug("[Heap Analyzer] Too Many Nodes! (%d)", nodes.size());
-			delete graph;
-			return;
-		}
-#endif
-
-		Q_FOREACH(const Result *result, result_map) {
-			const edb::address_t addr = result->block;
-			if(nodes.contains(addr)) {
-				for(edb::address_t pointer: result->points_to) {
-					new GraphEdge(nodes[addr], nodes[pointer]);
-				}
-			}
-		}
-
-		qDebug("[Heap Analyzer] Done Processing Edges");
-	} while(0);
-
-
-	graph->layout();
-	graph->show();
-#endif
+	return result_map;
 }
 
 }

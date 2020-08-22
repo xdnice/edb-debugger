@@ -16,8 +16,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef GRAPH_EDGE_20090903_H_
-#define GRAPH_EDGE_20090903_H_
+#ifndef GRAPH_EDGE_H_20090903_
+#define GRAPH_EDGE_H_20090903_
 
 #include <QColor>
 #include <QGraphicsItemGroup>
@@ -28,20 +28,20 @@ class GraphWidget;
 class GraphNode;
 class GraphicsLineItem;
 
-class GraphEdge : public QGraphicsItemGroup {
-	Q_DISABLE_COPY(GraphEdge)
+class GraphEdge final : public QGraphicsItemGroup {
+public:
+	GraphEdge(GraphNode *from, GraphNode *to, const QColor &color = Qt::black, QGraphicsItem *parent = nullptr);
+	GraphEdge(const GraphEdge &) = delete;
+	GraphEdge &operator=(const GraphEdge &) = delete;
+	~GraphEdge() override;
 
 public:
-    GraphEdge(GraphNode *from, GraphNode *to, const QColor &color = Qt::black, QGraphicsItem *parent = nullptr);
-    ~GraphEdge() override;
+	enum { Type = UserType + 3 };
 
-public:
-    enum { Type = UserType + 3 };
-
-    int type() const override {
-        // Enable the use of qgraphicsitem_cast with this item.
-        return Type;
-    }
+	int type() const override {
+		// Enable the use of qgraphicsitem_cast with this item.
+		return Type;
+	}
 
 public:
 	GraphNode *from() const;
@@ -65,11 +65,11 @@ protected:
 	QGraphicsLineItem *createLineSegment(const QLineF &line, const QPen &pen);
 
 protected:
-	GraphNode   *const from_;
-	GraphNode   *const to_;
-	GraphWidget *const graph_;
-	QColor      color_;
-	Agedge_t    *edge_;
+	GraphNode *from_    = nullptr;
+	GraphNode *to_      = nullptr;
+	GraphWidget *graph_ = nullptr;
+	Agedge_t *edge_     = nullptr;
+	QColor color_;
 };
 
 #endif

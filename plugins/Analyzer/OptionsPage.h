@@ -16,30 +16,29 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef OPTIONS_PAGE_20090706_H_
-#define OPTIONS_PAGE_20090706_H_
+#ifndef OPTIONS_PAGE_H_20090706_
+#define OPTIONS_PAGE_H_20090706_
 
+#include "ui_OptionsPage.h"
 #include <QWidget>
 
 namespace AnalyzerPlugin {
-
-namespace Ui { class OptionsPage; }
 
 class OptionsPage : public QWidget {
 	Q_OBJECT
 
 public:
-    explicit OptionsPage(QWidget *parent = nullptr);
-	~OptionsPage() override;
+	explicit OptionsPage(QWidget *parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
+	~OptionsPage() override = default;
 
 public:
 	void showEvent(QShowEvent *event) override;
 
-public Q_SLOTS:
-	void on_checkBox_toggled(bool checked = false);
+private:
+	void checkBoxToggled(bool checked = false);
 
 private:
-	Ui::OptionsPage *const ui;
+	Ui::OptionsPage ui;
 };
 
 }

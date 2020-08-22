@@ -16,8 +16,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef FIXED_FONT_SELECTOR_H_
-#define FIXED_FONT_SELECTOR_H_
+#ifndef FIXED_FONT_SELECTOR_H_20191119_
+#define FIXED_FONT_SELECTOR_H_20191119_
 
 #include <QWidget>
 
@@ -27,8 +27,8 @@ class FixedFontSelector : public QWidget {
 	Q_OBJECT
 
 public:
-    explicit FixedFontSelector(QWidget *parent = nullptr);
-    ~FixedFontSelector() override;
+	explicit FixedFontSelector(QWidget *parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
+	~FixedFontSelector() override = default;
 
 public:
 	QFont currentFont();

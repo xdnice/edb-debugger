@@ -16,11 +16,12 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef DIALOGSYMBOLVIEWER_20080812_H_
-#define DIALOGSYMBOLVIEWER_20080812_H_
+#ifndef DIALOG_SYMBOL_VIEWER_H_20080812_
+#define DIALOG_SYMBOL_VIEWER_H_20080812_
 
-#include <QDialog>
 #include "Types.h"
+#include "ui_DialogSymbolViewer.h"
+#include <QDialog>
 
 class QModelIndex;
 class QPoint;
@@ -29,19 +30,16 @@ class QStringListModel;
 
 namespace SymbolViewerPlugin {
 
-namespace Ui { class DialogSymbolViewer; }
-
 class DialogSymbolViewer : public QDialog {
 	Q_OBJECT
 
 public:
-    explicit DialogSymbolViewer(QWidget *parent = nullptr);
-    ~DialogSymbolViewer() override;
+	explicit DialogSymbolViewer(QWidget *parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
+	~DialogSymbolViewer() override = default;
 
 public Q_SLOTS:
 	void on_listView_doubleClicked(const QModelIndex &index);
 	void on_listView_customContextMenuRequested(const QPoint &pos);
-	void on_btnRefresh_clicked();
 
 private Q_SLOTS:
 	void mnuFollowInDump();
@@ -50,15 +48,16 @@ private Q_SLOTS:
 	void mnuFollowInCPU();
 
 private:
-    void showEvent(QShowEvent *event) override;
+	void showEvent(QShowEvent *event) override;
 
 private:
-	void do_find();
+	void doFind();
 
 private:
-	 Ui::DialogSymbolViewer *const ui;
-	 QStringListModel *            model_;
-	 QSortFilterProxyModel *       filter_model_;
+	Ui::DialogSymbolViewer ui;
+	QStringListModel *model_            = nullptr;
+	QSortFilterProxyModel *filterModel_ = nullptr;
+	QPushButton *buttonRefresh_         = nullptr;
 };
 
 }

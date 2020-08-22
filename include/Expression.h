@@ -16,79 +16,81 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef EXPRESSION_20070402_H_
-#define EXPRESSION_20070402_H_
+#ifndef EXPRESSION_H_20070402_
+#define EXPRESSION_H_20070402_
 
+#include "Status.h"
 #include <QString>
 #include <functional>
 
 struct ExpressionError {
 public:
-	enum ERROR_MSG {
-		NONE,
-		SYNTAX,
-		UNBALANCED_PARENS,
-		UNBALANCED_BRACES,
-		DIVIDE_BY_ZERO,
-		INVALID_NUMBER,
-		UNKNOWN_VARIABLE,
-		CANNOT_READ_MEMORY,
-		UNEXPECTED_OPERATOR,
-		UNEXPECTED_NUMBER,
-		VARIABLE_LARGER_THAN_ADDRESS
+	enum ErrorMessage {
+		None,
+		Syntax,
+		UnbalancedParens,
+		UnbalancedBraces,
+		DivideByZero,
+		InvalidNumber,
+		UnknownVariable,
+		CannotReadMemory,
+		UnexpectedOperator,
+		UnexpectedNumber,
+		VariableLargerThanAddress
 	};
 
 public:
 	ExpressionError() = default;
 
-	explicit ExpressionError(ERROR_MSG type) : error_(type) {
+	explicit ExpressionError(ErrorMessage type)
+		: error_(type) {
 	}
 
 	const char *what() const noexcept {
-		switch(error_) {
-		case SYNTAX:
+		switch (error_) {
+		case Syntax:
 			return "Syntax Error";
-		case UNBALANCED_PARENS:
+		case UnbalancedParens:
 			return "Unbalanced Parenthesis";
-		case DIVIDE_BY_ZERO:
+		case DivideByZero:
 			return "Divide By Zero";
-		case INVALID_NUMBER:
+		case InvalidNumber:
 			return "Invalid Numerical Constant";
-		case UNKNOWN_VARIABLE:
+		case UnknownVariable:
 			return "Unknown Variable";
-		case UNBALANCED_BRACES:
+		case UnbalancedBraces:
 			return "Unbalanced Braces";
-		case CANNOT_READ_MEMORY:
+		case CannotReadMemory:
 			return "Cannot Read Memory At the Effective Address";
-		case UNEXPECTED_OPERATOR:
+		case UnexpectedOperator:
 			return "Unexpected Operator";
-		case UNEXPECTED_NUMBER:
+		case UnexpectedNumber:
 			return "Unexpected Numerical Constant";
-		case VARIABLE_LARGER_THAN_ADDRESS:
+		case VariableLargerThanAddress:
 			return "Variable Does Not Fit Into An Address. Is it an FPU Register?";
 		default:
 			return "Unknown Error";
 		}
 	}
-private:
-	ERROR_MSG error_ = NONE;
-};
 
+private:
+	ErrorMessage error_ = None;
+};
 
 template <class T>
 class Expression {
 public:
-	using variable_getter_t = std::function<T(const QString&, bool*, ExpressionError*)>;
-	using memory_reader_t   = std::function<T(T, bool*, ExpressionError*)>;
+	using variable_getter_t = std::function<T(const QString &, bool *, ExpressionError *)>;
+	using memoryReader_t    = std::function<T(T, bool *, ExpressionError *)>;
 
 public:
-	Expression(const QString &s, variable_getter_t vg, memory_reader_t mr);
+	Expression(const QString &s, variable_getter_t vg, memoryReader_t mr);
 	~Expression() = default;
 
 private:
 	struct Token {
-		Token() = default;
-		Token(const Token& other) = default;
+		Token()                   = default;
+		Token(const Token &other) = default;
 
 		enum Operator {
 			NONE,
@@ -137,56 +139,45 @@ private:
 	};
 
 private:
-	T evaluate_expression() {
+	T evalInternal() {
 		T result;
 
-		get_token();
-		eval_exp(result);
+		getToken();
+		evalExp(result);
 
 		return result;
 	}
 
 public:
-	T evaluate_expression(bool *ok, ExpressionError *error) noexcept {
-
-		Q_ASSERT(ok);
-		Q_ASSERT(error);
-
+	Result<T, ExpressionError> evaluate() noexcept {
 		try {
-			*ok = true;
-			return evaluate_expression();
-		} catch(const ExpressionError &e) {
-			*ok = false;
-			*error = e;
-			return T();
+			return evalInternal();
+		} catch (const ExpressionError &e) {
+			return make_unexpected(e);
 		}
 	}
-private:
-	void eval_exp(T &result);
-	void eval_exp0(T &result);
-	void eval_exp1(T &result);
-	void eval_exp2(T &result);
-	void eval_exp3(T &result);
-	void eval_exp4(T &result);
-	void eval_exp5(T &result);
-	void eval_exp6(T &result);
-	void eval_exp7(T &result);
-	void eval_atom(T &result);
-	void get_token();
-
-	static bool is_delim(QChar ch) {
-		return QString("[]!()=+-*/%&|^~<>\t\n\r ").contains(ch);
-	}
 
 private:
-	QString                 expression_;
-	QString::const_iterator expression_ptr_;
-	Token                   token_;
-	variable_getter_t       variable_reader_;
-	memory_reader_t         memory_reader_;
+	void evalExp(T &result);
+	void evalExp0(T &result);
+	void evalExp1(T &result);
+	void evalExp2(T &result);
+	void evalExp3(T &result);
+	void evalExp4(T &result);
+	void evalExp5(T &result);
+	void evalExp6(T &result);
+	void evalExp7(T &result);
+	void evalAtom(T &result);
+	void getToken();
+
+private:
+	QString expression_;
+	QString::const_iterator expressionPtr_;
+	Token token_;
+	variable_getter_t variableReader_;
+	memoryReader_t memoryReader_;
 };
 
 #include "Expression.tcc"
 
 #endif
-

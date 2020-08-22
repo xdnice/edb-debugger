@@ -16,38 +16,35 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef ELF32_20070718_H_
-#define ELF32_20070718_H_
+#ifndef ELFXX_H_20070718_
+#define ELFXX_H_20070718_
 
 #include "IBinary.h"
 #include "libELF/elf_binary.h"
 
 namespace BinaryInfoPlugin {
 
-template <class elfxx_header>
+template <class ElfHeader>
 class ELFXX : public IBinary {
 public:
-    explicit ELFXX(const std::shared_ptr<IRegion> &region);
-    ~ELFXX() override = default;
+	explicit ELFXX(const std::shared_ptr<IRegion> &region);
+	~ELFXX() override = default;
 
 public:
-    bool native() const override;
-    edb::address_t calculate_main() override;
-    edb::address_t debug_pointer() override;
-    edb::address_t entry_point() override;
-    size_t header_size() const override;
-    const void *header() const override;
+	bool native() const override;
+	edb::address_t entryPoint() override;
+	size_t headerSize() const override;
+	const void *header() const override;
 	std::vector<Header> headers() const override;
-    edb::address_t base_address() const override;
 
 private:
-	void validate_header();
+	void validateHeader();
 
 private:
 	std::shared_ptr<IRegion> region_;
-	elfxx_header             header_;
-	edb::address_t           base_address_;
-	std::vector<Header>      headers_;
+	ElfHeader header_;
+	edb::address_t baseAddress_{0};
+	std::vector<Header> headers_;
 };
 
 using ELF32 = ELFXX<elf32_header>;

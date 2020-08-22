@@ -16,8 +16,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef GRAPHWIDGET_20090903_H_
-#define GRAPHWIDGET_20090903_H_
+#ifndef GRAPH_WIDGET_H_20090903_
+#define GRAPH_WIDGET_H_20090903_
 
 #include <QGraphicsView>
 #include <graphviz/cgraph.h>
@@ -30,17 +30,16 @@ class QLabel;
 class QMouseEvent;
 class QString;
 
-class GraphWidget : public QGraphicsView {
+class GraphWidget final : public QGraphicsView {
 	Q_OBJECT
-	Q_DISABLE_COPY(GraphWidget)
-
-private:
 	friend class GraphNode;
 	friend class GraphEdge;
 
 public:
-    GraphWidget(QWidget* parent = nullptr);
-    ~GraphWidget() override;
+	GraphWidget(QWidget *parent = nullptr);
+	GraphWidget(const GraphWidget &) = delete;
+	GraphWidget &operator=(const GraphWidget &) = delete;
+	~GraphWidget() override;
 
 public:
 	void clear();
@@ -51,17 +50,17 @@ public Q_SLOTS:
 	void setHUDNotification(const QString &s, int duration = 1000);
 
 Q_SIGNALS:
-	void backgroundContextMenuEvent(QContextMenuEvent* event);
-	void nodeContextMenuEvent(QContextMenuEvent* event, GraphNode *node);
-	void nodeDoubleClickEvent(QMouseEvent* event, GraphNode *node);
+	void backgroundContextMenuEvent(QContextMenuEvent *event);
+	void nodeContextMenuEvent(QContextMenuEvent *event, GraphNode *node);
+	void nodeDoubleClickEvent(QMouseEvent *event, GraphNode *node);
 	void zoomEvent(qreal factor, qreal currentScale);
 
 protected:
-	void keyPressEvent(QKeyEvent* event) override;
+	void keyPressEvent(QKeyEvent *event) override;
 	void keyReleaseEvent(QKeyEvent *event) override;
-	void wheelEvent(QWheelEvent* event) override;
-	void contextMenuEvent(QContextMenuEvent* event) override;
-	void mouseDoubleClickEvent(QMouseEvent* event) override;
+	void wheelEvent(QWheelEvent *event) override;
+	void contextMenuEvent(QContextMenuEvent *event) override;
+	void mouseDoubleClickEvent(QMouseEvent *event) override;
 
 private:
 	void setGraphAttribute(const QString name, const QString value);
@@ -69,12 +68,11 @@ private:
 	void setEdgeAttribute(const QString name, const QString value);
 
 private:
-	bool      inLayout_  = false;
-	QLayout  *HUDLayout_ = nullptr;
-	QLabel   *HUDLabel_  = nullptr;
-	GVC_t    *context_;
-	Agraph_t *graph_;
+	bool inLayout_      = false;
+	QLayout *HUDLayout_ = nullptr;
+	QLabel *HUDLabel_   = nullptr;
+	GVC_t *context_     = nullptr;
+	Agraph_t *graph_    = nullptr;
 };
 
 #endif
-

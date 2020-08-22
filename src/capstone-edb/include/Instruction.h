@@ -15,8 +15,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef INSTRUCTION_20150908_H
-#define INSTRUCTION_20150908_H
+#ifndef INSTRUCTION_H_20150908_
+#define INSTRUCTION_H_20150908_
 
 #include "API.h"
 #include "Formatter.h"
@@ -30,8 +30,8 @@ class QString;
 namespace CapstoneEDB {
 
 enum class Architecture {
-	ARCH_X86, 
-	ARCH_AMD64, 
+	ARCH_X86,
+	ARCH_AMD64,
 	ARCH_ARM32_ARM,
 	ARCH_ARM32_THUMB,
 	ARCH_ARM64
@@ -47,45 +47,44 @@ class EDB_EXPORT Instruction {
 	friend class Operand;
 
 public:
-#if defined EDB_X86 || defined EDB_X86_64
-	static constexpr std::size_t MAX_SIZE = 15;
-#elif defined EDB_ARM32 || defined EDB_ARM64
-	static constexpr std::size_t MAX_SIZE = 4;
+#if defined(EDB_X86) || defined(EDB_X86_64)
+	static constexpr std::size_t MaxSize = 15;
+#elif defined(EDB_ARM32) || defined(EDB_ARM64)
+	static constexpr std::size_t MaxSize = 4;
 #endif
 
 public:
 	Instruction(const void *first, const void *end, uint64_t rva) noexcept;
-	Instruction(const Instruction &)            = delete;
+	Instruction(const Instruction &) = delete;
 	Instruction &operator=(const Instruction &) = delete;
-	Instruction(Instruction &&);
-	Instruction &operator=(Instruction &&);
+	Instruction(Instruction &&) noexcept;
+	Instruction &operator=(Instruction &&) noexcept;
 	~Instruction();
 
 public:
 	bool valid() const {
 		return insn_;
 	}
-	
+
 	explicit operator bool() const {
 		return valid();
 	}
 
 public:
-	int operation() const             { return insn_ ? insn_->id                   : 0;             }
-	std::size_t operand_count() const
-    {
-#if defined EDB_X86 || defined EDB_X86_64
-        return insn_ ? insn_->detail->x86.op_count : 0;
-#elif defined EDB_ARM32 || defined EDB_ARM64
-        return insn_ ? insn_->detail->arm.op_count : 0;
+	int operation() const { return insn_ ? insn_->id : 0; }
+	std::size_t operandCount() const {
+#if defined(EDB_X86) || defined(EDB_X86_64)
+		return insn_ ? insn_->detail->x86.op_count : 0;
+#elif defined(EDB_ARM32) || defined(EDB_ARM64)
+		return insn_ ? insn_->detail->arm.op_count : 0;
 #else
-#	error "What to return here?"
+#error "What to return here?"
 #endif
-    }
-	std::size_t byte_size() const     { return insn_ ? insn_->size                 : 1;             }
-	uint64_t rva() const              { return insn_ ? insn_->address              : rva_;          }
-	std::string mnemonic() const      { return insn_ ? insn_->mnemonic             : std::string(); }
-	const uint8_t *bytes() const      { return insn_ ? insn_->bytes                : &byte0_;       }
+	}
+	std::size_t byteSize() const { return insn_ ? insn_->size : 1; }
+	uint64_t rva() const { return insn_ ? insn_->address : rva_; }
+	std::string mnemonic() const { return insn_ ? insn_->mnemonic : std::string(); }
+	const uint8_t *bytes() const { return insn_ ? insn_->bytes : &byte0_; }
 
 public:
 	Operand operator[](size_t n) const;
@@ -97,7 +96,7 @@ public:
 	}
 
 public:
-	cs_insn *operator->()             { return insn_; }
+	cs_insn *operator->() { return insn_; }
 	const cs_insn *operator->() const { return insn_; }
 
 public:
@@ -105,7 +104,7 @@ public:
 
 public:
 	enum ConditionCode : uint8_t {
-#if defined EDB_X86 || defined EDB_X86_64
+#if defined(EDB_X86) || defined(EDB_X86_64)
 		CC_UNCONDITIONAL = 0x10, // value must be higher than 0xF
 		CC_CXZ,
 		CC_ECXZ,
@@ -138,7 +137,7 @@ public:
 		CC_GE  = CC_NL,
 		CC_NLE = CC_LE | 1,
 		CC_G   = CC_NLE
-#elif defined EDB_ARM32
+#elif defined(EDB_ARM32)
 		CC_EQ = 0,
 		CC_NE,
 		CC_HS,
@@ -155,19 +154,19 @@ public:
 		CC_LE,
 		CC_AL,
 #else
-#	error "Not implemented"
+#error "Not implemented"
 #endif
 	};
-	
-	ConditionCode condition_code() const;
+
+	ConditionCode conditionCode() const;
 
 private:
-	cs_insn *insn_;
-	
+	cs_insn *insn_ = nullptr;
+
 	// we have our own copies of this data so we can give something meaningful
 	// even during a failed disassembly
-	uint8_t  byte0_ = 0;
-	uint64_t rva_   = 0;
+	uint8_t byte0_ = 0;
+	uint64_t rva_  = 0;
 };
 
 }

@@ -16,39 +16,42 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef SESSIONMANAGER_20170928_H_
-#define SESSIONMANAGER_20170928_H_
+#ifndef SESSION_MANAGER_H_20170928_
+#define SESSION_MANAGER_H_20170928_
 
 #include "SessionError.h"
+#include "Status.h"
 #include "Types.h"
 
+#include <QCoreApplication>
 #include <QString>
 #include <QVariant>
-#include <QCoreApplication>
 
 class SessionManager {
 	Q_DECLARE_TR_FUNCTIONS(SessionManager)
 
-public:
-	SessionManager() {}
+private:
+	SessionManager() = default;
 
 public:
 	SessionManager(const SessionManager &) = delete;
-	SessionManager& operator=(const SessionManager &) = delete;
+	SessionManager &operator=(const SessionManager &) = delete;
 
 public:
 	static SessionManager &instance();
-  
+
 public:
-	bool load_session(const QString &, SessionError&);
-	void save_session(const QString &);
-	void get_comments(QVariantList &);
-	void add_comment(Comment &);
-	void remove_comment(edb::address_t);
-	
+	Result<void, SessionError> loadSession(const QString &filename);
+	void saveSession(const QString &filename);
+	QVariantList comments() const;
+	void addComment(const Comment &c);
+	void removeComment(edb::address_t address);
+
 private:
-	QVariantMap session_data;
-	void load_plugin_data();
+	void loadPluginData();
+
+private:
+	QVariantMap sessionData_;
 };
 
 #endif

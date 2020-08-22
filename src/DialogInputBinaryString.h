@@ -16,27 +16,27 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef DIALOG_INPUT_BINARY_STRING_20061127_H_
-#define DIALOG_INPUT_BINARY_STRING_20061127_H_
+#ifndef DIALOG_INPUT_BINARY_STRING_H_20061127_
+#define DIALOG_INPUT_BINARY_STRING_H_20061127_
 
 #include <QDialog>
 
-class BinaryString;
+#include "ui_DialogInputBinaryString.h"
 
-namespace Ui { class DialogInputBinaryString; }
+class BinaryString;
 
 class DialogInputBinaryString : public QDialog {
 	Q_OBJECT
 
 public:
-    explicit DialogInputBinaryString(QWidget *parent = nullptr);
-    ~DialogInputBinaryString() override;
+	explicit DialogInputBinaryString(QWidget *parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
+	~DialogInputBinaryString() override = default;
 
 public:
-	BinaryString *binary_string() const;
+	BinaryString *binaryString() const;
 
 private:
-	Ui::DialogInputBinaryString *const ui;
+	Ui::DialogInputBinaryString ui;
 };
 
 #endif

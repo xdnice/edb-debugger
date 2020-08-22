@@ -16,37 +16,36 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef DIALOG_ASSEMBLER_20130611_H_
-#define DIALOG_ASSEMBLER_20130611_H_
+#ifndef DIALOG_ASSEMBLER_H_20130611_
+#define DIALOG_ASSEMBLER_H_20130611_
 
-#include <QDialog>
-#include "Types.h"
 #include "IRegion.h"
+#include "Types.h"
+#include "ui_DialogAssembler.h"
+#include <QDialog>
 
 namespace AssemblerPlugin {
-
-namespace Ui { class DialogAssembler; }
 
 class DialogAssembler : public QDialog {
 	Q_OBJECT
 
 public:
-    explicit DialogAssembler(QWidget *parent = nullptr);
-	~DialogAssembler() override;
+	explicit DialogAssembler(QWidget *parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
+	~DialogAssembler() override = default;
 
 public Q_SLOTS:
 	void on_buttonBox_accepted();
 
 public:
-	void set_address(edb::address_t address);
+	void setAddress(edb::address_t address);
 
 public:
 	void showEvent(QShowEvent *event) override;
 
 private:
-	 Ui::DialogAssembler *const ui;
-	 edb::address_t             address_;
-	 size_t                     instruction_size_;
+	Ui::DialogAssembler ui;
+	edb::address_t address_ = 0;
+	size_t instructionSize_ = 0;
 };
 
 }
